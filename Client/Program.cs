@@ -8,6 +8,7 @@ using Common.Log;
 
 namespace Client
 {
+    //TODO !! var/params names
     class Program
     {
         public static IBombermanService Proxy
@@ -60,7 +61,7 @@ namespace Client
                 }
             } 
         }
-
+        //todo replace playername by an id ...
         private static void ConnectPlayer(string playerName)
         {
             Task.Factory.StartNew(() => Proxy.ConnectUser(playerName));
@@ -70,7 +71,7 @@ namespace Client
         {
             Task.Factory.StartNew(() => Proxy.StartGame());
         }
-
+        //todo replace playername by an id ...
         private static void MoveTo(ActionType actionType, string login)
         {
             Task.Factory.StartNew(() => Proxy.MovePlayerToLocation(login, actionType));

@@ -10,7 +10,9 @@ namespace Common.DataContract
 
         public override bool Compare(LivingObject objectToCompare)
         {
-            return Username == ((Player) objectToCompare).Username;
+            if (GetType() == objectToCompare.GetType())
+                return Username == ((Player) objectToCompare).Username;
+            return false;
         }
     }
 }

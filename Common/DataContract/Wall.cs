@@ -12,7 +12,9 @@ namespace Common.DataContract
 
         public override bool Compare(LivingObject objectToCompare)
         {
-            return WallType == ((Wall) objectToCompare).WallType;
+            if (GetType() == objectToCompare.GetType())
+                return WallType == ((Wall) objectToCompare).WallType;
+            return false;
         }
     }
     [DataContract]

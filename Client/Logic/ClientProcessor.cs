@@ -51,7 +51,7 @@ namespace Client.Logic
         {
             if (currentMap != null)
             {
-                if (currentMap.GridPositions.Any(livingObject => livingObject.GetType() == objectToMoveBefore.GetType() && livingObject.Compare(objectToMoveBefore)))
+                if (currentMap.GridPositions.Any(livingObject => livingObject.Compare(objectToMoveBefore)))
                 {
                     currentMap.GridPositions.Remove(objectToMoveBefore);
                     currentMap.GridPositions.Add(objectToMoveAfter);
@@ -60,6 +60,7 @@ namespace Client.Logic
                     Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                     if (objectToMoveAfter is Player)
                         Console.Write('X');
+                    Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY);
                 }
             }
         }

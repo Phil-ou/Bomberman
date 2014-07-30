@@ -55,9 +55,9 @@ namespace Client.Logic
                 {
                     currentMap.GridPositions.Remove(objectToMoveBefore);
                     currentMap.GridPositions.Add(objectToMoveAfter);
-                    Console.SetCursorPosition(objectToMoveBefore.ObjectPosition.PositionX, 10 + objectToMoveBefore.ObjectPosition.PositionY);
+                    Console.SetCursorPosition(objectToMoveBefore.ObjectPosition.PositionX, 10 + objectToMoveBefore.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                     Console.Write(' ');
-                    Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY);
+                    Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                     if (objectToMoveAfter is Player)
                         Console.Write('X');
                 }
@@ -69,7 +69,7 @@ namespace Client.Logic
             currentMap = currentGame.Map;
             foreach (LivingObject item in currentGame.Map.GridPositions)
             {
-                Console.SetCursorPosition(item.ObjectPosition.PositionX, 10 + item.ObjectPosition.PositionY);
+                Console.SetCursorPosition(item.ObjectPosition.PositionX, 10 + item.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                 char toDisplay = ' ';
                 var wall = item as Wall;
                 if(wall != null)

@@ -47,8 +47,12 @@ namespace Client
                     case ConsoleKey.UpArrow:
                         MoveTo(ActionType.MoveUp, login);
                         break;
-                        //case ConsoleKey.LeftArrow:
-                        //case ConsoleKey.RightArrow:
+                    case ConsoleKey.LeftArrow:
+                        MoveTo(ActionType.MoveLeft, login);
+                        break;
+                    case ConsoleKey.RightArrow:
+                        MoveTo(ActionType.MoveRight, login);
+                        break;
                     case ConsoleKey.DownArrow:
                         MoveTo(ActionType.MoveDown, login);
                         break;

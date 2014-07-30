@@ -78,28 +78,28 @@ namespace Server.Logic
 
         public void MovePlayerToLocation(string login, ActionType actionType)
         {
-            LivingObject currentPlayer = null;
+            Player currentPlayer = null; // no need to use a LivingObject if we cast it to Player
             //find the player to move and initialize the current position
-            foreach (var item in Server.GameCreated.Map.GridPositions.Where(x => x is Player))
+            foreach (var item in Server.GameCreated.Map.GridPositions.Where(x => x is Player)) // should use LinQ
             {
                 currentPlayer =  item as Player;
-                if (currentPlayer != null && ((Player)currentPlayer).Username == login)
-                {
+                if (currentPlayer != null && currentPlayer.Username == login) // no need to use a LivingObject if we cast it to Player
                     break;
-                }
             }
             switch (actionType)
             {
                 case ActionType.MoveUp:
-                    MoveUp((Player)currentPlayer);
+                    MoveUp(currentPlayer); // no need to use a LivingObject if we cast it to Player
                     break;
                 case ActionType.MoveDown:
-                    MoveDown((Player) currentPlayer);
+                    MoveDown(currentPlayer); // no need to use a LivingObject if we cast it to Player
                     break;
-                //case ConsoleKey.LeftArrow:
-                //    break;
-                //case ConsoleKey.RightArrow:
-                //    break;
+                case ActionType.MoveRight:
+                    MoveRight(currentPlayer); // no need to use a LivingObject if we cast it to Player
+                    break;
+                case ActionType.MoveLeft:
+                    MoveLeft(currentPlayer); // no need to use a LivingObject if we cast it to Player
+                    break;
             }
         }
 
@@ -184,7 +184,7 @@ namespace Server.Logic
                 Username = currentPlayerBefore.Username
             };
             //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY + 1 == currentPlayerBefore.ObjectPosition.PositionY
+            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY-1
                                                                                                          && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX);
             //if its a Wall then return
             if (objectToNextPosition is Wall) return;
@@ -212,12 +212,68 @@ namespace Server.Logic
                 Username = currentPlayerBefore.Username
             };
             //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY - 1 == currentPlayerBefore.ObjectPosition.PositionY
+            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY+1
                                                                                                          && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX);
             //if its a Wall then return
             if (objectToNextPosition is Wall) return;
             //change position
             currentPlayerAfter.ObjectPosition.PositionY = currentPlayerBefore.ObjectPosition.PositionY + 1;
+            //modify the currentMap
+            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
+            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
+            //warn each player of the move
+            foreach (PlayerModel playerModel in Server.PlayersOnline)
+            {
+                playerModel.CallbackService.OnMove(currentPlayerBefore, currentPlayerAfter);
+            }
+        }
+
+        private void MoveRight(Player currentPlayerBefore)
+        {
+            LivingObject currentPlayerAfter = new Player
+            {
+                ObjectPosition = new Position
+                {
+                    PositionX = currentPlayerBefore.ObjectPosition.PositionX,
+                    PositionY = currentPlayerBefore.ObjectPosition.PositionY
+                },
+                Username = currentPlayerBefore.Username
+            };
+            //retreive object positionned just above the current player position
+            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY
+                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX+1);
+            //if its a Wall then return
+            if (objectToNextPosition is Wall) return;
+            //change position
+            currentPlayerAfter.ObjectPosition.PositionX = currentPlayerBefore.ObjectPosition.PositionX+1;
+            //modify the currentMap
+            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
+            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
+            //warn each player of the move
+            foreach (PlayerModel playerModel in Server.PlayersOnline)
+            {
+                playerModel.CallbackService.OnMove(currentPlayerBefore, currentPlayerAfter);
+            }
+        }
+
+        private void MoveLeft(Player currentPlayerBefore)
+        {
+            LivingObject currentPlayerAfter = new Player
+            {
+                ObjectPosition = new Position
+                {
+                    PositionX = currentPlayerBefore.ObjectPosition.PositionX,
+                    PositionY = currentPlayerBefore.ObjectPosition.PositionY
+                },
+                Username = currentPlayerBefore.Username
+            };
+            //retreive object positionned just above the current player position
+            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY
+                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX-1);
+            //if its a Wall then return
+            if (objectToNextPosition is Wall) return;
+            //change position
+            currentPlayerAfter.ObjectPosition.PositionX = currentPlayerBefore.ObjectPosition.PositionX - 1;
             //modify the currentMap
             Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
             Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);

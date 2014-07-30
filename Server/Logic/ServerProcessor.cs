@@ -107,7 +107,7 @@ namespace Server.Logic
         {
             List<LivingObject> matrice = new List<LivingObject>();
 
-            using (StreamReader reader = new StreamReader(@"C:\Users\AHF503\Documents\Visual Studio 2012\Projects\Bomberman\Server\Map.dat", Encoding.UTF8))
+            using (StreamReader reader = new StreamReader(@"D:\github\Bomberman\Server\Map.dat", Encoding.UTF8))
             {
                 string objectsToAdd = reader.ReadToEnd().Replace("\n", "").Replace("\r", "");
 
@@ -172,21 +172,27 @@ namespace Server.Logic
             return matrice;
         }
 
-        private void MoveUp(Player currentPlayer)
+        private void MoveUp(Player currentPlayerBefore)
         {
-            LivingObject currentPlayerBefore = new Player
+            LivingObject currentPlayerAfter = new Player
             {
-                ObjectPosition = currentPlayer.ObjectPosition,
-                Username = currentPlayer.Username
+                ObjectPosition = new Position
+                {
+                    PositionX = currentPlayerBefore.ObjectPosition.PositionX,
+                    PositionY = currentPlayerBefore.ObjectPosition.PositionY
+                },
+                Username = currentPlayerBefore.Username
             };
-            LivingObject currentPlayerAfter = currentPlayer;
             //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY + 1 == currentPlayer.ObjectPosition.PositionY
-                                                                                                         && x.ObjectPosition.PositionX == currentPlayer.ObjectPosition.PositionX);
+            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY + 1 == currentPlayerBefore.ObjectPosition.PositionY
+                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX);
             //if its a Wall then return
             if (objectToNextPosition is Wall) return;
-            //modify the currentMap
+            //change position
             currentPlayerAfter.ObjectPosition.PositionY = currentPlayerBefore.ObjectPosition.PositionY - 1;
+            //modify the currentMap
+            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
+            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
             //warn each player of the move
             foreach (PlayerModel playerModel in Server.PlayersOnline)
             {
@@ -210,8 +216,11 @@ namespace Server.Logic
                                                                                                          && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX);
             //if its a Wall then return
             if (objectToNextPosition is Wall) return;
-            //modify the currentMap
+            //change position
             currentPlayerAfter.ObjectPosition.PositionY = currentPlayerBefore.ObjectPosition.PositionY + 1;
+            //modify the currentMap
+            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
+            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
             //warn each player of the move
             foreach (PlayerModel playerModel in Server.PlayersOnline)
             {

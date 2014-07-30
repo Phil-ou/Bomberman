@@ -51,19 +51,15 @@ namespace Client.Logic
         {
             if (currentMap != null)
             {
-                foreach (LivingObject livingObject in currentMap.GridPositions)
+                if (currentMap.GridPositions.Any(livingObject => livingObject.GetType() == objectToMoveBefore.GetType() && livingObject.Compare(objectToMoveBefore)))
                 {
-                    if (livingObject.GetType() == objectToMoveBefore.GetType() && livingObject.Compare(objectToMoveBefore))
-                    {
-                        currentMap.GridPositions.Remove(objectToMoveBefore);
-                        currentMap.GridPositions.Add(objectToMoveAfter);
-                        Console.SetCursorPosition(objectToMoveBefore.ObjectPosition.PositionX, 10 + objectToMoveBefore.ObjectPosition.PositionY);
-                        Console.Write(' ');
-                        Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY);
-                        if (objectToMoveAfter is Player)
-                            Console.Write('X');
-                        break;
-                    }
+                    currentMap.GridPositions.Remove(objectToMoveBefore);
+                    currentMap.GridPositions.Add(objectToMoveAfter);
+                    Console.SetCursorPosition(objectToMoveBefore.ObjectPosition.PositionX, 10 + objectToMoveBefore.ObjectPosition.PositionY);
+                    Console.Write(' ');
+                    Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY);
+                    if (objectToMoveAfter is Player)
+                        Console.Write('X');
                 }
             }
         }

@@ -9,28 +9,13 @@ namespace Client
     //TODO !! var/params names
     class Program
     {
-        //public static IBombermanService Proxy
-        //{
-        //    get
-        //    {
-        //        var context = new InstanceContext(new BombermanCallbackService());
-        //        var toto = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
-        //        IBombermanService toto2 = null;
-        //        Task t = Task.Factory.StartNew(() => {
-        //                                        toto2 = toto.CreateChannel();
-        //        });
-        //        Task.WaitAll(t);
-        //        return toto2;
-        //    }
-        //}
-
-        public static IBombermanService Proxy { get; set; }
+        public static IBombermanService Proxy { get; private set; }
 
         static void Main(string[] args)
         {
             var context = new InstanceContext(new BombermanCallbackService());
-            var toto = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
-            Proxy = toto.CreateChannel();
+            var factory = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
+            Proxy = factory.CreateChannel();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine("-------- Welcome to Bomberman --------");
@@ -40,7 +25,9 @@ namespace Client
             ConnectPlayer(login);
             Log.Initialize(@"D:\Temp\BombermanLogs", "Client_" + login +".log");
             Log.WriteLine(Log.LogLevels.Info, "Logged at " + DateTime.Now.ToShortTimeString());
-            while (true)
+
+            bool stop = false;
+            while (!stop)
             {
                 ConsoleKeyInfo keyboard = Console.ReadKey();
                 switch (keyboard.Key)
@@ -61,10 +48,24 @@ namespace Client
                     case ConsoleKey.DownArrow:
                         MoveTo(ActionType.MoveDown, login);
                         break;
-
+                    case ConsoleKey.X: // SinaC: never leave a while(true) without an exit condition
+                        stop = true;
+                        break;
                 }
-            } 
+            }
+
+            // SinaC: Clean properly factory
+            try
+            {
+                factory.Close();
+            }
+            catch (Exception ex)
+            {
+                Log.WriteLine(Log.LogLevels.Warning, "Exception:{0}", ex);
+                factory.Abort();
+            }
         }
+
         //todo replace playername by an id ...
         private static void ConnectPlayer(string playerName)
         {

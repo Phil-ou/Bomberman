@@ -7,10 +7,13 @@ namespace Client.Logic
 {
     public class ClientProcessor
     {
+        private string _currentPlayerName;
         private Map currentMap;
 
         public void OnUserConnected(string login, List<String> loginsList, bool isCreator, bool canStartGame)
         {
+            _currentPlayerName = login;
+
             InitializeConsole();
             Console.WriteLine("--------------------------------------");
             Console.WriteLine("-------- Welcome to Bomberman --------");
@@ -44,6 +47,7 @@ namespace Client.Logic
             Console.SetWindowSize(80, 30);
             Console.BufferWidth = 80;
             Console.BufferHeight = 30;
+            Console.CursorVisible = false;
             Console.Clear();
         }
 
@@ -56,11 +60,14 @@ namespace Client.Logic
                     currentMap.GridPositions.Remove(objectToMoveBefore);
                     currentMap.GridPositions.Add(objectToMoveAfter);
                     Console.SetCursorPosition(objectToMoveBefore.ObjectPosition.PositionX, 10 + objectToMoveBefore.ObjectPosition.PositionY); // 10 should be replaced with map parameters
-                    Console.Write(' ');
+                    Console.Write(' '); // !! if more than one object can be at the same position, we should display object at before location instead of erasing
+                    //Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY); // 10 should be replaced with map parameters
+                    //if (objectToMoveAfter is Player)
+                    //    Console.Write('X');
+                    char toDisplay = ObjectToChar(objectToMoveAfter);
                     Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY); // 10 should be replaced with map parameters
-                    if (objectToMoveAfter is Player)
-                        Console.Write('X');
-                    Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY);
+                    Console.Write(toDisplay);
+                    Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                 }
             }
         }
@@ -71,16 +78,25 @@ namespace Client.Logic
             foreach (LivingObject item in currentGame.Map.GridPositions)
             {
                 Console.SetCursorPosition(item.ObjectPosition.PositionX, 10 + item.ObjectPosition.PositionY); // 10 should be replaced with map parameters
-                char toDisplay = ' ';
-                var wall = item as Wall;
-                if(wall != null)
-                    toDisplay = wall.WallType == WallType.Undestructible ? '█' : '.';
-                if(item is Player && currentPlayerLogin == ((Player)item).Username)
-                    toDisplay = 'X';
+                char toDisplay = ObjectToChar(item);
+                
                 Console.Write(toDisplay);
             }
         }
 
-        
+        private char ObjectToChar(LivingObject item)
+        {
+            if (item is Wall)
+            {
+                var wall = item as Wall;
+                return wall.WallType == WallType.Undestructible ? '█' : '.';
+            }
+            else if (item is Player)
+            {
+                var player = item as Player;
+                return player.Username == _currentPlayerName ? 'X' : '*';
+            }
+            return ' ';
+        }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Security.Cryptography;
 using System.ServiceModel;
+using System.Threading.Tasks;
 using Common.DataContract;
 using Common.Interfaces;
 using Common.Log;
@@ -9,29 +11,23 @@ namespace Client
     //TODO !! var/params names
     class Program
     {
-        //public static IBombermanService Proxy
-        //{
-        //    get
-        //    {
-        //        var context = new InstanceContext(new BombermanCallbackService());
-        //        var toto = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
-        //        IBombermanService toto2 = null;
-        //        Task t = Task.Factory.StartNew(() => {
-        //                                        toto2 = toto.CreateChannel();
-        //        });
-        //        Task.WaitAll(t);
-        //        return toto2;
-        //    }
-        //}
-
-        public static IBombermanService Proxy { get; set; }
+        public static IBombermanService Proxy
+        {
+            get
+            {
+                var context = new InstanceContext(new BombermanCallbackService());
+                var toto = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
+                IBombermanService toto2 = null;
+                Task t = Task.Factory.StartNew(() => {
+                                                toto2 = toto.CreateChannel();
+                });
+                Task.WaitAll(t);
+                return toto2;
+            }
+        }
 
         static void Main(string[] args)
         {
-            var context = new InstanceContext(new BombermanCallbackService());
-            var toto = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
-            Proxy = toto.CreateChannel();
-
             Console.WriteLine("--------------------------------------");
             Console.WriteLine("-------- Welcome to Bomberman --------");
             Console.WriteLine("--------------------------------------\n\n");
@@ -68,17 +64,17 @@ namespace Client
         //todo replace playername by an id ...
         private static void ConnectPlayer(string playerName)
         {
-            Proxy.ConnectUser(playerName);
+            Task.Factory.StartNew(() => Proxy.ConnectUser(playerName));
         }
 
         private static void StartGame()
         {
-            Proxy.StartGame();
+            Task.Factory.StartNew(() => Proxy.StartGame());
         }
         //todo replace playername by an id ...
         private static void MoveTo(ActionType actionType, string login)
         {
-            Proxy.MovePlayerToLocation(login, actionType);
+            Task.Factory.StartNew(() => Proxy.MovePlayerToLocation(login, actionType));
         }
     }
 }

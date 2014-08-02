@@ -1,5 +1,4 @@
-﻿using System;
-using System.ServiceModel;
+﻿using System.ServiceModel;
 using Common.DataContract;
 using Server.Logic;
 
@@ -8,21 +7,21 @@ namespace Server
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Reentrant)]
     public class BombermanService : Common.Interfaces.IBombermanService
     {
-        private static ServerProcessor ServerProcessor = new ServerProcessor();
+        private static readonly ServerProcessor ServerProcessor = new ServerProcessor();
 
         public static void StartServer()
         {
             ServerProcessor.StartServer();
         }
 
-        public void ConnectUser(string login)
+        public void ConnectUser(Player newPlayer)
         {
-            ServerProcessor.ConnectUser(login);
+            ServerProcessor.ConnectUser(newPlayer);
         }
 
-        public void StartGame()
+        public void StartGame(string mapPath)
         {
-            ServerProcessor.StartGame();
+            ServerProcessor.StartGame(mapPath);
         }
 
         public void MovePlayerToLocation(string login, ActionType actionType)

@@ -1,26 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Client.Logic;
 using Common.DataContract;
 using Common.Interfaces;
-using Common.Log;
 
 namespace Client
 {
     //[CallbackBehavior(ConcurrencyMode = ConcurrencyMode.Reentrant)]
     public class BombermanCallbackService : IBombermanCallbackService
     {
-        private static ClientProcessor ClientProcessor = new ClientProcessor();
+        private static readonly ClientProcessor ClientProcessor = new ClientProcessor();
 
-        public void OnUserConnected(string login, List<String> loginsList, bool isCreator, bool canStartGame)
+        public void OnUserConnected(Player player, List<String> loginsList, bool canStartGame)
         {
-            ClientProcessor.OnUserConnected(login,loginsList,isCreator,canStartGame);
+            ClientProcessor.OnUserConnected(player, loginsList, canStartGame);
         }
 
-        public void OnGameStarted(Game newGame, string currentPlayerLogin)
+        public void OnGameStarted(Game newGame)
         {
-            ClientProcessor.OnGameStarted(newGame, currentPlayerLogin);
+            ClientProcessor.OnGameStarted(newGame);
         }
 
         public void OnMove(LivingObject objectToMoveBefore, LivingObject objectToMoveAfter)

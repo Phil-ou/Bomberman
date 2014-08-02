@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
@@ -15,9 +14,9 @@ namespace Server.Logic
     {
         #region variables
 
-        private static int MapSize = 10; // SinaC: why static ?
+        private const int MapSize = 10;
 
-        private static ServerModel Server; // SinaC: why static ?
+        private ServerModel _server;
 
         #endregion variables
 
@@ -25,53 +24,52 @@ namespace Server.Logic
 
         public void StartServer()
         {
-            Server = new ServerModel();
-            Server.Initialize();
+            _server = new ServerModel();
+            _server.Initialize();
         }
 
-        public void ConnectUser(string login)
+        public void ConnectUser(Player user)
         {
+            //Check if its the first user to be connected
+            user.IsCreator = _server.PlayersOnline.Count == 0;
             //create new Player
             PlayerModel newPlayer = new PlayerModel
                 {
-                    CallbackService = OperationContext.Current.GetCallbackChannel<IBombermanCallbackService>(),
-                    Login = login,
-                    IsCreator = Server.PlayersOnline.Count == 0
+                    Player = user,
+                    CallbackService = OperationContext.Current.GetCallbackChannel<IBombermanCallbackService>()
                 };
             //register user to the server
-            Server.PlayersOnline.Add(newPlayer);
+            _server.PlayersOnline.Add(newPlayer);
             //create a list of login to send to client
-            List<string> logins = Server.PlayersOnline.Select(x => x.Login).ToList();
+            List<string> playersNamesList = _server.PlayersOnline.Select(x => x.Player.Username).ToList();
             //Warning players that a new player is connected and send them the list of all players online
-            bool canStartGame = Server.PlayersOnline.Count > 1; // SinaC: no need to compute this in inner loop
-            foreach (PlayerModel currentPlayer in Server.PlayersOnline)
+            bool canStartGame = _server.PlayersOnline.Count > 1; // SinaC: no need to compute this in inner loop
+            foreach (PlayerModel player in _server.PlayersOnline)
             {
                 //todo check if player disconnect
-                currentPlayer.CallbackService.OnUserConnected(login, logins, currentPlayer.IsCreator, canStartGame);
+                player.CallbackService.OnUserConnected(user, playersNamesList, canStartGame);
             }
         }
 
-        public void StartGame()
+        public void StartGame(string mapPath)
         {
             //create the list of players to pass to client
-            List<Player> players = Server.PlayersOnline.Select(playerModel => new Player
-                {
-                    Username = playerModel.Login
-                }).ToList();
+            List<Player> players = _server.PlayersOnline.Select(playerModel => playerModel.Player).ToList();
 
             Game newGame = new Game
                 {
                     Map = new Map
                         {
                             MapName = "Custom Map",
-                            GridPositions = GenerateGrid(players)
+                            GridPositions = GenerateGrid(players, mapPath)
                         },
                     CurrentStatus = GameStatus.Started,
                 };
-            Server.GameCreated = newGame;
-            foreach (PlayerModel currentPlayer in Server.PlayersOnline)
+            _server.GameCreated = newGame;
+            //send the game to all players
+            foreach (PlayerModel currentPlayer in _server.PlayersOnline)
             {
-                currentPlayer.CallbackService.OnGameStarted(newGame, currentPlayer.Login);
+                currentPlayer.CallbackService.OnGameStarted(newGame);
             }
         }
 
@@ -79,7 +77,7 @@ namespace Server.Logic
         {
             Player currentPlayer = null; // no need to use a LivingObject if we cast it to Player
             //find the player to move and initialize the current position
-            foreach (var item in Server.GameCreated.Map.GridPositions.Where(x => x is Player))
+            foreach (var item in _server.GameCreated.Map.GridPositions.Where(x => x is Player))
             {
                 currentPlayer = item as Player;
                 if (currentPlayer != null && currentPlayer.Username == login)
@@ -109,11 +107,11 @@ namespace Server.Logic
             }
         }
 
-        private List<LivingObject> GenerateGrid(List<Player> players) // SinaC: path to map should be an additional parameter
+        private List<LivingObject> GenerateGrid(List<Player> players,string mapPath) // SinaC: path to map should be an additional parameter
         {
             List<LivingObject> matrice = new List<LivingObject>();
 
-            using (StreamReader reader = new StreamReader(@"D:\github\Bomberman\Server\Map.dat", Encoding.UTF8))
+            using (StreamReader reader = new StreamReader(mapPath, Encoding.UTF8))
             {
                 string objectsToAdd = reader.ReadToEnd().Replace("\n", "").Replace("\r", "");
 
@@ -121,12 +119,12 @@ namespace Server.Logic
                 {
                     for (int x = 0; x < MapSize; x++)
                     {
-                        LivingObject currentlivingObject = null;
-                        char cell = objectsToAdd[(y*MapSize) + x]; // SinaC: factoring is the key :)   y and x were inverted
+                        LivingObject livingObject = null;
+                        char cell = objectsToAdd[(y * MapSize) + x]; // SinaC: factoring is the key :)   y and x were inverted
                         switch (cell)
                         {
                             case 'u':
-                                currentlivingObject = new Wall
+                                livingObject = new Wall
                                     {
                                         WallType = WallType.Undestructible,
                                         ObjectPosition = new Position
@@ -137,7 +135,7 @@ namespace Server.Logic
                                     };
                                 break;
                             case 'd':
-                                currentlivingObject = new Wall
+                                livingObject = new Wall
                                     {
                                         WallType = WallType.Destructible,
                                         ObjectPosition = new Position
@@ -159,20 +157,18 @@ namespace Server.Logic
                             case '3':
                                 if (players.Count > (int) Char.GetNumericValue(cell))
                                 {
-                                    currentlivingObject = new Player
-                                        {
-                                            Username = players[(int) Char.GetNumericValue(cell)].Username,
-                                            ObjectPosition = new Position
-                                                {
-                                                    PositionX = x,
-                                                    PositionY = y
-                                                }
-                                        };
+                                    livingObject = players[(int) Char.GetNumericValue(cell)];
+                                    livingObject.ObjectPosition = new Position
+                                    {
+                                        PositionX = x,
+                                        PositionY = y
+                                    };
+
                                 }
                                 break;
                         }
-                        if (currentlivingObject != null)
-                            matrice.Add(currentlivingObject);
+                        if (livingObject != null)
+                            matrice.Add(livingObject);
                     }
                 }
             }
@@ -180,11 +176,11 @@ namespace Server.Logic
         }
 
 
-        // SinaC: replace MoveUp/Down/Left and Right   use Move(0,-1) for MoveUp, Move(0,+1) for MoveDown, ...
+        // SinaC: Move(0,-1) for MoveUp, Move(0,+1) for MoveDown, ...
         private void Move(Player before, int stepX, int stepY)
         {
             // Get object at future player location
-            LivingObject collider = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => before.ObjectPosition.PositionY + stepY == x.ObjectPosition.PositionY
+            LivingObject collider = _server.GameCreated.Map.GridPositions.FirstOrDefault(x => before.ObjectPosition.PositionY + stepY == x.ObjectPosition.PositionY
                                                                                              && before.ObjectPosition.PositionX + stepX == x.ObjectPosition.PositionX);
             // Can't go thru wall
             if (collider is Wall)
@@ -202,128 +198,14 @@ namespace Server.Logic
             };
 
             // Remove player from old position
-            Server.GameCreated.Map.GridPositions.Remove(before);
+            _server.GameCreated.Map.GridPositions.Remove(before);
             // And add to new position
-            Server.GameCreated.Map.GridPositions.Add(after);
+            _server.GameCreated.Map.GridPositions.Add(after);
 
             // Send new player position to players
-            foreach (PlayerModel playerModel in Server.PlayersOnline)
+            foreach (PlayerModel playerModel in _server.PlayersOnline)
                 playerModel.CallbackService.OnMove(before, after);
         }
-
-        /*
-        private void MoveUp(Player currentPlayerBefore)
-        {
-            LivingObject currentPlayerAfter = new Player
-                {
-                    ObjectPosition = new Position
-                        {
-                            PositionX = currentPlayerBefore.ObjectPosition.PositionX,
-                            PositionY = currentPlayerBefore.ObjectPosition.PositionY
-                        },
-                    Username = currentPlayerBefore.Username
-                };
-            //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY - 1
-                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX);
-            //if its a Wall then return
-            if (objectToNextPosition is Wall) return;
-            //change position
-            currentPlayerAfter.ObjectPosition.PositionY = currentPlayerBefore.ObjectPosition.PositionY - 1;
-            //modify the currentMap
-            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
-            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
-            //warn each player of the move
-            foreach (PlayerModel playerModel in Server.PlayersOnline)
-            {
-                playerModel.CallbackService.OnMove(currentPlayerBefore, currentPlayerAfter);
-            }
-        }
-
-        private void MoveDown(Player currentPlayerBefore)
-        {
-            LivingObject currentPlayerAfter = new Player
-                {
-                    ObjectPosition = new Position
-                        {
-                            PositionX = currentPlayerBefore.ObjectPosition.PositionX,
-                            PositionY = currentPlayerBefore.ObjectPosition.PositionY
-                        },
-                    Username = currentPlayerBefore.Username
-                };
-            //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY + 1
-                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX);
-            //if its a Wall then return
-            if (objectToNextPosition is Wall) return;
-            //change position
-            currentPlayerAfter.ObjectPosition.PositionY = currentPlayerBefore.ObjectPosition.PositionY + 1;
-            //modify the currentMap
-            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
-            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
-            //warn each player of the move
-            foreach (PlayerModel playerModel in Server.PlayersOnline)
-            {
-                playerModel.CallbackService.OnMove(currentPlayerBefore, currentPlayerAfter);
-            }
-        }
-
-        private void MoveRight(Player currentPlayerBefore)
-        {
-            LivingObject currentPlayerAfter = new Player
-                {
-                    ObjectPosition = new Position
-                        {
-                            PositionX = currentPlayerBefore.ObjectPosition.PositionX,
-                            PositionY = currentPlayerBefore.ObjectPosition.PositionY
-                        },
-                    Username = currentPlayerBefore.Username
-                };
-            //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY
-                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX + 1);
-            //if its a Wall then return
-            if (objectToNextPosition is Wall) return;
-            //change position
-            currentPlayerAfter.ObjectPosition.PositionX = currentPlayerBefore.ObjectPosition.PositionX + 1;
-            //modify the currentMap
-            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
-            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
-            //warn each player of the move
-            foreach (PlayerModel playerModel in Server.PlayersOnline)
-            {
-                playerModel.CallbackService.OnMove(currentPlayerBefore, currentPlayerAfter);
-            }
-        }
-
-        private void MoveLeft(Player currentPlayerBefore)
-        {
-            LivingObject currentPlayerAfter = new Player
-                {
-                    ObjectPosition = new Position
-                        {
-                            PositionX = currentPlayerBefore.ObjectPosition.PositionX,
-                            PositionY = currentPlayerBefore.ObjectPosition.PositionY
-                        },
-                    Username = currentPlayerBefore.Username
-                };
-            //retreive object positionned just above the current player position
-            LivingObject objectToNextPosition = Server.GameCreated.Map.GridPositions.FirstOrDefault(x => x.ObjectPosition.PositionY == currentPlayerBefore.ObjectPosition.PositionY
-                                                                                                         && x.ObjectPosition.PositionX == currentPlayerBefore.ObjectPosition.PositionX - 1);
-            //if its a Wall then return
-            if (objectToNextPosition is Wall) return;
-            //change position
-            currentPlayerAfter.ObjectPosition.PositionX = currentPlayerBefore.ObjectPosition.PositionX - 1;
-            //modify the currentMap
-            Server.GameCreated.Map.GridPositions.Remove(currentPlayerBefore);
-            Server.GameCreated.Map.GridPositions.Add(currentPlayerAfter);
-            //warn each player of the move
-            foreach (PlayerModel playerModel in Server.PlayersOnline)
-            {
-                playerModel.CallbackService.OnMove(currentPlayerBefore, currentPlayerAfter);
-            }
-        }
-        */
         #endregion methods
     }
 }

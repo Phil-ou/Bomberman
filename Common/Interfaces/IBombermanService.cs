@@ -1,5 +1,4 @@
-﻿using System;
-using System.ServiceModel;
+﻿using System.ServiceModel;
 using Common.DataContract;
 
 namespace Common.Interfaces
@@ -8,10 +7,10 @@ namespace Common.Interfaces
     public interface IBombermanService
     {
         [OperationContract(IsOneWay = true)]
-        void ConnectUser(string login);
+        void ConnectUser(Player newPlayer);
 
         [OperationContract(IsOneWay = true)]
-        void StartGame();
+        void StartGame(string mapPath);
 
         [OperationContract(IsOneWay = true)]
         void MovePlayerToLocation(string login, ActionType actionType); //up,down,left,right

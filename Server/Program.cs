@@ -20,6 +20,14 @@ namespace Server
             Log.WriteLine(Log.LogLevels.Info,  "Server Started at " + DateTime.Now.ToShortTimeString());
             var svcHost = new ServiceHost(typeof (BombermanService));
             svcHost.Open();
+
+            foreach (var endpt in svcHost.Description.Endpoints)
+            {
+                Console.WriteLine("Enpoint address:\t{0}", endpt.Address);
+                Console.WriteLine("Enpoint binding:\t{0}", endpt.Binding);
+                Console.WriteLine("Enpoint contract:\t{0}\n", endpt.Contract.ContractType.Name);
+            }
+
             while (Server.ServerStatus == ServerStatus.Started)
             {
                 Console.WriteLine("1) Players Online");

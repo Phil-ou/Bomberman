@@ -9,6 +9,7 @@ namespace Client
     //TODO !! var/params names
     class Program
     {
+        private const string MapPath = @"D:\GitHub\Bomberman\Server\map.dat"; // SinaC: only server should know map path, and client specify a map id
         public static IBombermanService Proxy { get; private set; }
 
         static void Main(string[] args)
@@ -24,7 +25,7 @@ namespace Client
             string login = Console.ReadLine();
             Player newPlayer = new Player
             {
-                Id = Guid.NewGuid().GetHashCode(),
+                Id = Guid.NewGuid().GetHashCode(), // SinaC: only server can ensure uniqueness of player id, and more important: GetHashCode on 2 differents GUID may return the same result !!!
                 Username = login
             };
             ConnectPlayer(newPlayer);
@@ -39,8 +40,9 @@ namespace Client
                 {
                     //s
                     case ConsoleKey.S:
-                        Console.WriteLine("\nEnter the path of the map.bat");
-                        StartGame(Console.ReadLine());
+                        //Console.WriteLine("\nEnter the path of the map.bat");
+                        //StartGame(Console.ReadLine());
+                        StartGame(MapPath);
                         break;
                     case ConsoleKey.UpArrow:
                         MoveTo(ActionType.MoveUp, login);
@@ -60,7 +62,7 @@ namespace Client
                 }
             }
 
-            // SinaC: Clean properly factory
+            // SinaC: Clean factory properly
             try
             {
                 factory.Close();

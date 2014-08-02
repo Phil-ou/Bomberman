@@ -43,7 +43,7 @@ namespace Server.Logic
             //create a list of login to send to client
             List<string> playersNamesList = _server.PlayersOnline.Select(x => x.Player.Username).ToList();
             //Warning players that a new player is connected and send them the list of all players online
-            bool canStartGame = _server.PlayersOnline.Count > 1; // SinaC: no need to compute this in inner loop
+            bool canStartGame = _server.PlayersOnline.Count > 1;
             foreach (PlayerModel player in _server.PlayersOnline)
             {
                 //todo check if player disconnect
@@ -107,7 +107,7 @@ namespace Server.Logic
             }
         }
 
-        private List<LivingObject> GenerateGrid(List<Player> players,string mapPath) // SinaC: path to map should be an additional parameter
+        private List<LivingObject> GenerateGrid(List<Player> players,string mapPath)
         {
             List<LivingObject> matrice = new List<LivingObject>();
 
@@ -120,7 +120,7 @@ namespace Server.Logic
                     for (int x = 0; x < MapSize; x++)
                     {
                         LivingObject livingObject = null;
-                        char cell = objectsToAdd[(y * MapSize) + x]; // SinaC: factoring is the key :)   y and x were inverted
+                        char cell = objectsToAdd[(y * MapSize) + x];
                         switch (cell)
                         {
                             case 'u':
@@ -176,7 +176,7 @@ namespace Server.Logic
         }
 
 
-        // SinaC: Move(0,-1) for MoveUp, Move(0,+1) for MoveDown, ...
+        // Move(0,-1) for MoveUp, Move(0,+1) for MoveDown, ...
         private void Move(Player before, int stepX, int stepY)
         {
             // Get object at future player location
@@ -190,6 +190,7 @@ namespace Server.Logic
             Player after = new Player
             {
                 Username = before.Username,
+                Id = before.Id, // SinaC: without this line, client doesn't recognise it's own player data and then display '*' instead of 'X'
                 ObjectPosition = new Position
                 {
                     PositionX = before.ObjectPosition.PositionX + stepX,

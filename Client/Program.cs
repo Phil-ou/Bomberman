@@ -22,7 +22,12 @@ namespace Client
             Console.WriteLine("--------------------------------------\n\n");
             Console.WriteLine("Type your player name :\n");
             string login = Console.ReadLine();
-            ConnectPlayer(login);
+            Player newPlayer = new Player
+            {
+                Id = Guid.NewGuid().GetHashCode(),
+                Username = login
+            };
+            ConnectPlayer(newPlayer);
             Log.Initialize(@"D:\Temp\BombermanLogs", "Client_" + login +".log");
             Log.WriteLine(Log.LogLevels.Info, "Logged at " + DateTime.Now.ToShortTimeString());
 
@@ -34,7 +39,8 @@ namespace Client
                 {
                     //s
                     case ConsoleKey.S:
-                        StartGame();
+                        //Console.WriteLine("\nEnter the path of the map.bat");
+                        StartGame(@"C:\Users\hisil\HDD backup 2012\Bomberman\Server\map.bat");
                         break;
                     case ConsoleKey.UpArrow:
                         MoveTo(ActionType.MoveUp, login);
@@ -67,14 +73,14 @@ namespace Client
         }
 
         //todo replace playername by an id ...
-        private static void ConnectPlayer(string playerName)
+        private static void ConnectPlayer(Player newPlayer)
         {
-            Proxy.ConnectUser(playerName);
+            Proxy.ConnectUser(newPlayer);
         }
 
-        private static void StartGame()
+        private static void StartGame(string mapPath)
         {
-            Proxy.StartGame();
+            Proxy.StartGame(mapPath);
         }
         //todo replace playername by an id ...
         private static void MoveTo(ActionType actionType, string login)

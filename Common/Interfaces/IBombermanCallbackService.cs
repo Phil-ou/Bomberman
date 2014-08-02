@@ -9,10 +9,10 @@ namespace Common.Interfaces
     public interface IBombermanCallbackService
     {
         [OperationContract(IsOneWay = true)]
-        void OnUserConnected(string userName, List<string> logins, bool isCreator,bool canStartGame);
+        void OnUserConnected(Player player, List<string> logins, bool canStartGame);
 
         [OperationContract(IsOneWay = true)]
-        void OnGameStarted(Game newGame, string currentPlayerLogin);
+        void OnGameStarted(Game newGame);
 
         [OperationContract(IsOneWay = true)]
         void OnMove(LivingObject objectToMoveBefore, LivingObject objectToMoveAfter);

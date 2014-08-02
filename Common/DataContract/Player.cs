@@ -6,12 +6,19 @@ namespace Common.DataContract
     public class Player : LivingObject
     {
         [DataMember]
+        public int Id { get; set; }
+        [DataMember]
         public string Username { get; set; }
+        [DataMember]
+        public int Score { get; set; }
+        [DataMember]
+        public bool IsCreator { get; set; }
+
 
         public override bool Compare(LivingObject objectToCompare)
         {
             if (GetType() == objectToCompare.GetType())
-                return Username == ((Player) objectToCompare).Username;
+                return Id == ((Player) objectToCompare).Id;
             return false;
         }
     }

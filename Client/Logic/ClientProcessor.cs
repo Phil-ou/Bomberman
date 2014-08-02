@@ -7,31 +7,32 @@ namespace Client.Logic
 {
     public class ClientProcessor
     {
-        private string _currentPlayerName;
-        private Map currentMap;
+        public Player Player { get; set; }
 
-        public void OnUserConnected(string login, List<String> loginsList, bool isCreator, bool canStartGame)
+        public Map Map { get; set; }
+
+        public void OnUserConnected(Player player, List<String> loginsList, bool canStartGame)
         {
-            _currentPlayerName = login;
+            Player = player;
 
             InitializeConsole();
             Console.WriteLine("--------------------------------------");
             Console.WriteLine("-------- Welcome to Bomberman --------");
             Console.WriteLine("--------------------------------------\n\n");
-            Console.WriteLine("New User Joined the server : " + login + "\n");
+            Console.WriteLine("New User Joined the server : " + player.Username + "\n");
             Console.WriteLine("List of players online :\n\n");
-            foreach (string currentLogin in loginsList)
+            foreach (string login in loginsList)
             {
-                Console.WriteLine(currentLogin + "\n\n");
+                Console.WriteLine(login + "\n\n");
             }
-            if (isCreator)
+            if (Player.IsCreator)
             {
                 Console.WriteLine(canStartGame ? "Press S to start the game" : "Wait for other players.");
             }
             else Console.WriteLine("Wait until the creator start the game.");
         }
 
-        public void OnGameStarted(Game newGame, string currentPlayerLogin)
+        public void OnGameStarted(Game newGame)
         {
             InitializeConsole();
             Console.WriteLine("--------------------------------------");
@@ -39,7 +40,7 @@ namespace Client.Logic
             Console.WriteLine("--------------------------------------");
             Console.WriteLine("---------------FIGHT!-----------------");
             Console.WriteLine("--------------------------------------");
-            DisplayMap(newGame, currentPlayerLogin);
+            DisplayMap(newGame);
         }
 
         private static void InitializeConsole()
@@ -53,12 +54,12 @@ namespace Client.Logic
 
         public void OnMove(LivingObject objectToMoveBefore, LivingObject objectToMoveAfter)
         {
-            if (currentMap != null)
+            if (Map != null)
             {
-                if (currentMap.GridPositions.Any(livingObject => livingObject.Compare(objectToMoveBefore)))
+                if (Map.GridPositions.Any(livingObject => livingObject.Compare(objectToMoveBefore)))
                 {
-                    currentMap.GridPositions.Remove(objectToMoveBefore);
-                    currentMap.GridPositions.Add(objectToMoveAfter);
+                    Map.GridPositions.Remove(objectToMoveBefore);
+                    Map.GridPositions.Add(objectToMoveAfter);
                     Console.SetCursorPosition(objectToMoveBefore.ObjectPosition.PositionX, 10 + objectToMoveBefore.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                     Console.Write(' '); // !! if more than one object can be at the same position, we should display object at before location instead of erasing
                     //Console.SetCursorPosition(objectToMoveAfter.ObjectPosition.PositionX, 10 + objectToMoveAfter.ObjectPosition.PositionY); // 10 should be replaced with map parameters
@@ -72,9 +73,9 @@ namespace Client.Logic
             }
         }
 
-        private void DisplayMap(Game currentGame, string currentPlayerLogin)
+        private void DisplayMap(Game currentGame)
         {
-            currentMap = currentGame.Map;
+            Map = currentGame.Map;
             foreach (LivingObject item in currentGame.Map.GridPositions)
             {
                 Console.SetCursorPosition(item.ObjectPosition.PositionX, 10 + item.ObjectPosition.PositionY); // 10 should be replaced with map parameters
@@ -91,10 +92,10 @@ namespace Client.Logic
                 var wall = item as Wall;
                 return wall.WallType == WallType.Undestructible ? '█' : '.';
             }
-            else if (item is Player)
+            if (item is Player)
             {
                 var player = item as Player;
-                return player.Username == _currentPlayerName ? 'X' : '*';
+                return Player.Compare(player) ? 'X' : '*';
             }
             return ' ';
         }

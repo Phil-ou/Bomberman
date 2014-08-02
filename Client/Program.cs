@@ -39,8 +39,13 @@ namespace Client
                 {
                     //s
                     case ConsoleKey.S:
+<<<<<<< HEAD
                         //Console.WriteLine("\nEnter the path of the map.bat");
                         StartGame(@"C:\Users\hisil\HDD backup 2012\Bomberman\Server\map.bat");
+=======
+                        Console.WriteLine("\nEnter the path of the map.bat");
+                        StartGame(Console.ReadLine());
+>>>>>>> origin/master
                         break;
                     case ConsoleKey.UpArrow:
                         MoveTo(ActionType.MoveUp, login);

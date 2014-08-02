@@ -27,15 +27,19 @@ namespace Server.Logic
             _server = new ServerModel();
             _server.Initialize();
         }
-
-        public void ConnectUser(Player user)
+        //id is generated client side to allow many players with same username
+        public void ConnectUser(string username, int id)
         {
-            //Check if its the first user to be connected
-            user.IsCreator = _server.PlayersOnline.Count == 0;
             //create new Player
             PlayerModel newPlayer = new PlayerModel
                 {
-                    Player = user,
+                    Player = new Player
+                    {
+                        Id = id,
+                        Username = username,
+                        //Check if its the first user to be connected
+                        IsCreator = _server.PlayersOnline.Count == 0
+                    },
                     CallbackService = OperationContext.Current.GetCallbackChannel<IBombermanCallbackService>()
                 };
             //register user to the server
@@ -47,7 +51,7 @@ namespace Server.Logic
             foreach (PlayerModel player in _server.PlayersOnline)
             {
                 //todo check if player disconnect
-                player.CallbackService.OnUserConnected(user, playersNamesList, canStartGame);
+                player.CallbackService.OnUserConnected(newPlayer.Player, playersNamesList, canStartGame);
             }
         }
 
@@ -66,48 +70,37 @@ namespace Server.Logic
                     CurrentStatus = GameStatus.Started,
                 };
             _server.GameCreated = newGame;
-            //send the game to all players
+            //send the game firt and last time to all players
             foreach (PlayerModel currentPlayer in _server.PlayersOnline)
             {
                 currentPlayer.CallbackService.OnGameStarted(newGame);
             }
         }
 
-        public void MovePlayerToLocation(string login, ActionType actionType)
+        public void MovePlayerToLocation(int idPlayer, ActionType actionType)
         {
-            Player currentPlayer = null; // no need to use a LivingObject if we cast it to Player
-            //find the player to move and initialize the current position
-            foreach (var item in _server.GameCreated.Map.GridPositions.Where(x => x is Player))
+            foreach (Player player in _server.GameCreated.Map.GridPositions.Where(livingObject => livingObject is Player && ((Player)livingObject).Id == idPlayer))
             {
-                currentPlayer = item as Player;
-                if (currentPlayer != null && currentPlayer.Username == login)
-                    break;
-            }
-            // SinaC: previous loop should be replaced with this Linq query
-            //  previous loop can lead to false result if login is not found in GridPositions, currentPlayer would be equal to last player in GridPositions
-            //Player currentPlayer = Server.GameCreated.Map.GridPositions.Where(x => x is Player).Cast<Player>().FirstOrDefault(x => x.Username == login);
-            switch (actionType)
-            {
-                case ActionType.MoveUp:
-                    //MoveUp(currentPlayer);
-                    Move(currentPlayer, 0, -1);
-                    break;
-                case ActionType.MoveDown:
-                    //MoveDown(currentPlayer);
-                    Move(currentPlayer, 0, +1);
-                    break;
-                case ActionType.MoveRight:
-                    //MoveRight(currentPlayer);
-                    Move(currentPlayer, +1, 0);
-                    break;
-                case ActionType.MoveLeft:
-                    //MoveLeft(currentPlayer);
-                    Move(currentPlayer, -1, 0);
-                    break;
+                switch (actionType)
+                {
+                    case ActionType.MoveUp:
+                        Move(player, 0, -1);
+                        break;
+                    case ActionType.MoveDown:
+                        Move(player, 0, +1);
+                        break;
+                    case ActionType.MoveRight:
+                        Move(player, +1, 0);
+                        break;
+                    case ActionType.MoveLeft:
+                        Move(player, -1, 0);
+                        break;
+                }
+                break;
             }
         }
 
-        private List<LivingObject> GenerateGrid(List<Player> players,string mapPath) // SinaC: path to map should be an additional parameter
+        private List<LivingObject> GenerateGrid(List<Player> players,string mapPath)
         {
             List<LivingObject> matrice = new List<LivingObject>();
 
@@ -176,27 +169,61 @@ namespace Server.Logic
         }
 
 
+        //// SinaC: Move(0,-1) for MoveUp, Move(0,+1) for MoveDown, ...
+        //private void Move(Player before, int stepX, int stepY)
+        //{
+        //    // Get object at future player location
+        //    LivingObject collider = _server.GameCreated.Map.GridPositions.FirstOrDefault(x => before.ObjectPosition.PositionY + stepY == x.ObjectPosition.PositionY
+        //                                                                                     && before.ObjectPosition.PositionX + stepX == x.ObjectPosition.PositionX);
+        //    // Can't go thru wall
+        //    if (collider is Wall)
+        //        return;
+        //    //can't go if another player is already on the way
+        //    if (collider is Player)
+        //        return;
+        //    Player after = new Player
+        //    {
+        //        Username = before.Username,
+        //        ObjectPosition = new Position
+        //        {
+        //            PositionX = before.ObjectPosition.PositionX + stepX,
+        //            PositionY = before.ObjectPosition.PositionY + stepY,
+        //        },
+        //        Id = before.Id
+        //    };
+
+        //    // Remove player from old position
+        //    _server.GameCreated.Map.GridPositions.Remove(before);
+        //    // And add to new position
+        //    _server.GameCreated.Map.GridPositions.Add(after);
+
+        //    // Send new player position to players
+        //    foreach (PlayerModel playerModel in _server.PlayersOnline)
+        //        playerModel.CallbackService.OnMove(before, after);
+        //}
         // SinaC: Move(0,-1) for MoveUp, Move(0,+1) for MoveDown, ...
+        // alternative to bypass the erase in window console
         private void Move(Player before, int stepX, int stepY)
         {
             // Get object at future player location
             LivingObject collider = _server.GameCreated.Map.GridPositions.FirstOrDefault(x => before.ObjectPosition.PositionY + stepY == x.ObjectPosition.PositionY
                                                                                              && before.ObjectPosition.PositionX + stepX == x.ObjectPosition.PositionX);
-            // Can't go thru wall
-            if (collider is Wall)
-                return;
-
-            // Update position by creating a new player
-            Player after = new Player
+            Player after;
+            // Can't go thru wall or player
+            if (!(collider is Wall || collider is Player))
             {
-                Username = before.Username,
-                ObjectPosition = new Position
+                after = new Player
                 {
-                    PositionX = before.ObjectPosition.PositionX + stepX,
-                    PositionY = before.ObjectPosition.PositionY + stepY,
-                }
-            };
-
+                    Username = before.Username,
+                    ObjectPosition = new Position
+                    {
+                        PositionX = before.ObjectPosition.PositionX + stepX,
+                        PositionY = before.ObjectPosition.PositionY + stepY,
+                    },
+                    Id = before.Id
+                };
+            }
+            else after = before;
             // Remove player from old position
             _server.GameCreated.Map.GridPositions.Remove(before);
             // And add to new position

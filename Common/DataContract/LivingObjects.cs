@@ -11,6 +11,10 @@ namespace Common.DataContract
         [DataMember]
         public Position ObjectPosition { get; set; }
 
-        public abstract bool Compare(LivingObject objectToCompare);
+        public bool ComparePosition(LivingObject objectToCompare)
+        {
+            return ObjectPosition.PositionX == objectToCompare.ObjectPosition.PositionX &&
+                 ObjectPosition.PositionY == objectToCompare.ObjectPosition.PositionY;
+        }
     }
 }

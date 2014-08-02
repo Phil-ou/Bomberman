@@ -5,7 +5,7 @@ using Common.DataContract;
 
 namespace Common.Interfaces
 {
-
+    
     public interface IBombermanCallbackService
     {
         [OperationContract(IsOneWay = true)]

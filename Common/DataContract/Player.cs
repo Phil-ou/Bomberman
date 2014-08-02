@@ -15,7 +15,7 @@ namespace Common.DataContract
         public bool IsCreator { get; set; }
 
 
-        public override bool Compare(LivingObject objectToCompare)
+        public bool CompareId(LivingObject objectToCompare)
         {
             if (GetType() == objectToCompare.GetType())
                 return Id == ((Player) objectToCompare).Id;

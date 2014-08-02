@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Common.DataContract;
 
-namespace Client.Logic
+namespace ClientWPF.Logic
 {
     public class ClientProcessor
     {
@@ -16,11 +16,11 @@ namespace Client.Logic
             Player = player;
 
             InitializeConsole();
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine("-------- Welcome to Bomberman --------");
-            Console.WriteLine("--------------------------------------\n\n");
-            Console.WriteLine("New User Joined the server : " + player.Username + "\n");
-            Console.WriteLine("List of players online :\n\n");
+            //Console.WriteLine("--------------------------------------");
+            //Console.WriteLine("-------- Welcome to Bomberman --------");
+            //Console.WriteLine("--------------------------------------\n\n");
+            //Console.WriteLine("New User Joined the server : " + player.Username + "\n");
+            //Console.WriteLine("List of players online :\n\n");
             foreach (string login in loginsList)
             {
                 Console.WriteLine(login + "\n\n");
@@ -36,11 +36,6 @@ namespace Client.Logic
         public void OnGameStarted(Game newGame)
         {
             InitializeConsole();
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine("-------- Welcome to Bomberman --------");
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine("---------------FIGHT!-----------------");
-            Console.WriteLine("--------------------------------------");
             DisplayMap(newGame);
         }
 

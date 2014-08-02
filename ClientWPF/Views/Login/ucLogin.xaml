@@ -1,0 +1,47 @@
+﻿<UserControl x:Class="ClientWPF.Views.Login.ucLogin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:login="clr-namespace:ClientWPF.ViewModels.Login"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance login:LoginViewModelDesignData, IsDesignTimeCreatable=True}"
+             d:DesignHeight="900" d:DesignWidth="1400">
+    <UserControl.Resources>
+
+        <SolidColorBrush x:Key="BrushWatermarkBackground" Color="White" />
+        <SolidColorBrush x:Key="BrushWatermarkForeground" Color="LightSteelBlue" />
+        <SolidColorBrush x:Key="BrushWatermarkBorder" Color="Indigo" />
+
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+
+        <Style x:Key="EntryFieldStyle" TargetType="Grid" >
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+    </UserControl.Resources>
+    <Grid>
+        <Image Stretch="Fill" Source="../../Images/bombawallpaper.png"/>
+        <Border Margin="5" Padding="5" Background="LightYellow" HorizontalAlignment="Center" VerticalAlignment="Center" Width="200" Height="100" 
+          BorderBrush="SteelBlue" BorderThickness="3,5,3,5" CornerRadius="3">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock HorizontalAlignment="Center" Text="Login" FontSize="20" FontWeight="Bold"/>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Background="{StaticResource BrushWatermarkBackground}" Style="{StaticResource EntryFieldStyle}" >
+                        <TextBlock Margin="5,2" Text="Enter your username" Foreground="{StaticResource BrushWatermarkForeground}"
+                           Visibility="{Binding ElementName=TxtUserEntry, Path=Text[0], Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        <TextBox Name="TxtUserEntry" Width="130" Background="Transparent" BorderBrush="{StaticResource BrushWatermarkBorder}" />
+                    </Grid>
+                </Grid>
+                <Button Height="20" Width="70" Margin="10" Command="{Binding ConnectCommand}">
+                    <TextBlock Text="Connect"></TextBlock>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

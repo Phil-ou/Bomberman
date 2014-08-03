@@ -14,9 +14,9 @@ namespace Server
             ServerProcessor.StartServer();
         }
 
-        public void ConnectUser(Player newPlayer)
+        public void ConnectUser(string username, int id)
         {
-            ServerProcessor.ConnectUser(newPlayer);
+            ServerProcessor.ConnectUser(username, id);
         }
 
         public void StartGame(string mapPath)
@@ -24,9 +24,9 @@ namespace Server
             ServerProcessor.StartGame(mapPath);
         }
 
-        public void MovePlayerToLocation(string login, ActionType actionType)
+        public void MovePlayerToLocation(int idPlayer, ActionType actionType)
         {
-            ServerProcessor.MovePlayerToLocation(login, actionType);
+            ServerProcessor.MovePlayerToLocation(idPlayer, actionType);
         }
     }
 }

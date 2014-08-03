@@ -5,7 +5,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{4A54E1C1-F82D-48CA-AE02-2309FAB4962C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{D3061F90-7443-447E-9018-49108AE3FF59}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientConsole", "Client\ClientConsole.csproj", "{D3061F90-7443-447E-9018-49108AE3FF59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientWPF", "ClientWPF\ClientWPF.csproj", "{1AE16C4C-7A19-4695-9DFF-0619F2DF27A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,10 @@ Global
 		{D3061F90-7443-447E-9018-49108AE3FF59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3061F90-7443-447E-9018-49108AE3FF59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3061F90-7443-447E-9018-49108AE3FF59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AE16C4C-7A19-4695-9DFF-0619F2DF27A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AE16C4C-7A19-4695-9DFF-0619F2DF27A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AE16C4C-7A19-4695-9DFF-0619F2DF27A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AE16C4C-7A19-4695-9DFF-0619F2DF27A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

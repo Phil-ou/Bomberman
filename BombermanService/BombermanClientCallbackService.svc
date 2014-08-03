@@ -1,1 +1,0 @@
-﻿<%@ ServiceHost Language="C#" Debug="true" Service="BombermanService.Service1" CodeBehind="BombermanClientCallbackService.svc.cs" %>

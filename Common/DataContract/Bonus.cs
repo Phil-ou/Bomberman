@@ -9,10 +9,5 @@ namespace Common.DataContract
         public string Name { get; set; }
         [DataMember]
         public string Description { get; set; }
-
-        public override bool Compare(LivingObject objectToCompare)
-        {
-            throw new System.NotImplementedException();
-        }
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Common.DataContract;
 
-namespace Client.Logic
+namespace ClientWPF.Logic
 {
     public class ClientProcessor
     {
@@ -16,11 +16,11 @@ namespace Client.Logic
             Player = player;
 
             InitializeConsole();
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine("-------- Welcome to Bomberman --------");
-            Console.WriteLine("--------------------------------------\n\n");
-            Console.WriteLine("New User Joined the server : " + player.Username + "\n");
-            Console.WriteLine("List of players online :\n\n");
+            //Console.WriteLine("--------------------------------------");
+            //Console.WriteLine("-------- Welcome to Bomberman --------");
+            //Console.WriteLine("--------------------------------------\n\n");
+            //Console.WriteLine("New User Joined the server : " + player.Username + "\n");
+            //Console.WriteLine("List of players online :\n\n");
             foreach (string login in loginsList)
             {
                 Console.WriteLine(login + "\n\n");
@@ -36,11 +36,6 @@ namespace Client.Logic
         public void OnGameStarted(Game newGame)
         {
             InitializeConsole();
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine("-------- Welcome to Bomberman --------");
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine("---------------FIGHT!-----------------");
-            Console.WriteLine("--------------------------------------");
             DisplayMap(newGame);
         }
 
@@ -55,11 +50,9 @@ namespace Client.Logic
 
         public void OnMove(LivingObject objectToMoveBefore, LivingObject objectToMoveAfter)
         {
-            if (Map == null) 
-                return;
+            if (Map == null) return;
             //check if object to move does exists
-            if (!Map.GridPositions.Any(livingObject => livingObject.ComparePosition(objectToMoveBefore))) 
-                return;
+            if (!Map.GridPositions.Any(livingObject => livingObject.ComparePosition(objectToMoveBefore))) return;
             //if before is player and is "me" then update global player
             if (objectToMoveBefore is Player && Player.CompareId(objectToMoveBefore))
                 Player = objectToMoveAfter as Player;
@@ -81,7 +74,7 @@ namespace Client.Logic
             {
                 Console.SetCursorPosition(item.ObjectPosition.PositionX, 10 + item.ObjectPosition.PositionY); // 10 should be replaced with map parameters
                 char toDisplay = ObjectToChar(item);
-
+                
                 Console.Write(toDisplay);
             }
         }

@@ -9,11 +9,14 @@ namespace Client
     //TODO !! var/params names
     class Program
     {
-        private const string MapPath = @"D:\GitHub\Bomberman\Server\map.dat"; // SinaC: only server should know map path, and client specify a map id
         public static IBombermanService Proxy { get; private set; }
 
-        static void Main(string[] args)
+        public const string MapPath = @"C:\Users\hisil\HDD backup 2012\Bomberman\Server\map.dat";
+
+        static void Main()
         {
+            string username = "";
+            int id;
             var context = new InstanceContext(new BombermanCallbackService());
             var factory = new DuplexChannelFactory<IBombermanService>(context, "WSDualHttpBinding_IBombermanService");
             Proxy = factory.CreateChannel();
@@ -23,12 +26,9 @@ namespace Client
             Console.WriteLine("--------------------------------------\n\n");
             Console.WriteLine("Type your player name :\n");
             string login = Console.ReadLine();
-            Player newPlayer = new Player
-            {
-                Id = Guid.NewGuid().GetHashCode(), // SinaC: only server can ensure uniqueness of player id, and more important: GetHashCode on 2 differents GUID may return the same result !!!
-                Username = login
-            };
-            ConnectPlayer(newPlayer);
+            username = login;
+            id = Guid.NewGuid().GetHashCode();
+            ConnectPlayer(username, id);
             Log.Initialize(@"D:\Temp\BombermanLogs", "Client_" + login +".log");
             Log.WriteLine(Log.LogLevels.Info, "Logged at " + DateTime.Now.ToShortTimeString());
 
@@ -40,21 +40,19 @@ namespace Client
                 {
                     //s
                     case ConsoleKey.S:
-                        //Console.WriteLine("\nEnter the path of the map.bat");
-                        //StartGame(Console.ReadLine());
-                        StartGame(MapPath);
+                        StartGame();
                         break;
                     case ConsoleKey.UpArrow:
-                        MoveTo(ActionType.MoveUp, login);
+                        MoveTo(id, ActionType.MoveUp);
                         break;
                     case ConsoleKey.LeftArrow:
-                        MoveTo(ActionType.MoveLeft, login);
+                        MoveTo(id, ActionType.MoveLeft);
                         break;
                     case ConsoleKey.RightArrow:
-                        MoveTo(ActionType.MoveRight, login);
+                        MoveTo(id, ActionType.MoveRight);
                         break;
                     case ConsoleKey.DownArrow:
-                        MoveTo(ActionType.MoveDown, login);
+                        MoveTo(id, ActionType.MoveDown);
                         break;
                     case ConsoleKey.X: // SinaC: never leave a while(true) without an exit condition
                         stop = true;
@@ -62,7 +60,7 @@ namespace Client
                 }
             }
 
-            // SinaC: Clean factory properly
+            // SinaC: Clean properly factory
             try
             {
                 factory.Close();
@@ -75,19 +73,19 @@ namespace Client
         }
 
         //todo replace playername by an id ...
-        private static void ConnectPlayer(Player newPlayer)
+        private static void ConnectPlayer(string username, int id)
         {
-            Proxy.ConnectUser(newPlayer);
+            Proxy.ConnectUser(username, id);
         }
 
-        private static void StartGame(string mapPath)
+        private static void StartGame()
         {
-            Proxy.StartGame(mapPath);
+            Proxy.StartGame(MapPath);
         }
-        //todo replace playername by an id ...
-        private static void MoveTo(ActionType actionType, string login)
+
+        private static void MoveTo(int playerId, ActionType actionType)
         {
-            Proxy.MovePlayerToLocation(login, actionType);
+            Proxy.MovePlayerToLocation(playerId, actionType);
         }
     }
 }

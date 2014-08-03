@@ -1,0 +1,50 @@
+Contracts
+Client -> Server
+	Login:		new player tries to log on server
+	Logout:		player logs out from server
+	StartGame:	player starts game
+	Move:		player tries to move
+	PlaceBomb:	player tries to place a new bomb
+	Chat:		player send message to other players
+	Heartbeat:	client tick server to be considered as alive by server
+
+Server -> Client
+	OnLogin(to Login sender):						inform player if connection to server is successfull or not (response to Login)
+	OnUserConnected(to everyone except sender):		inform every player that a new played is connected to server (response to Login)
+	OnUserDisconnected(to everyone except sender):	inform every player that a player has disconnected (response to Logout or when disconnection is detected)
+	OnGameStarted(to everyone):						inform every player that a new game has started (response to StartGame)
+	OnMoved(to Move sender):						inform player that it's move is successfull or not (response toMove)
+	OnBombPlaced(to PlaceBomb sender):				inform player that it's bomb drop is successfull or not (response to OnBombPlaced)
+	OnChatReceived(to everyone except Chat sender):	message received
+	OnEntityAdded(to everyone):						bomb, bonus appearing
+	OnEntityDeleted(to everyone):					bomb exploded, bonus caught, player lost
+	OnEntityMoved(to everyone):						player moved, bomb moved
+	OnKilled(to everyone except loser):				player got killed
+	OnGameDraw(to everyone):						game timeout or simultaneous kill
+	OnGameLost(to everyone):						player got killed
+	OnGameWon(to everyone):							game finished with a winner
+	OnPing(to everyone):							server tick client to maintain connection
+
+Login(string username)
+Logout()
+StartGame(int mapId): set mapId to -1 for random map
+Move(Directions direction): Directions are Up, Left, Down, Right
+PlaceBomb()
+Chat(string message): send message to everyone
+Heartbeat(): send after x seconds without any message sent to server
+
+OnLogin(LoginResults result, int playerId, List<<int, string, string>> maps): results are successfull, duplicate login, too many players; maps: id, title, description
+OnUserConnected(string username, int playerId)
+OnUserDisconnected(int id)
+OnGameStarted(Location start, Map map)
+OnMoved(bool succeed, Location old, Location new)
+OnBombPlaced()
+OnChatReceived(int playerId, string msg)
+OnEntityAdded(Entity entity, Location location)
+OnEntityDeleted(Entity entity, Location location)
+OnEntityMoved(Entity entity, Location old, Location new)
+OnKilled(int playerId)
+OnGameDraw()
+OnGameLost()
+OnGameWon(int playerId)
+OnPing()

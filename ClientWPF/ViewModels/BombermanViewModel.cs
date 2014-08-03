@@ -22,6 +22,7 @@ namespace ClientWPF.ViewModels
 
         public void Initialize()
         {
+            // TODO: SinaC: create proxy ?
             LoginViewModel.Initialize(Proxy);
         }
 

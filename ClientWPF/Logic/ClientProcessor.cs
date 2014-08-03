@@ -13,7 +13,7 @@ namespace ClientWPF.Logic
 
         public void OnUserConnected(Player player, List<String> loginsList, bool canStartGame)
         {
-            Player = player;
+            Player = player; // SinaC: !!!!!!!!! Big bad bug in multiplayer OnUserConnected should only be sent to connecting player, another callback should be used to signal a new player to already connected one (OnNewUserConnected for example)
 
             InitializeConsole();
             //Console.WriteLine("--------------------------------------");
@@ -30,7 +30,8 @@ namespace ClientWPF.Logic
                 //todo don't allow user to click on s if canstartgame is false
                 Console.WriteLine(canStartGame ? "Press S to start the game" : "Wait for other players.");
             }
-            else Console.WriteLine("Wait until the creator start the game.");
+            else 
+                Console.WriteLine("Wait until the creator start the game.");
         }
 
         public void OnGameStarted(Game newGame)
@@ -50,9 +51,11 @@ namespace ClientWPF.Logic
 
         public void OnMove(LivingObject objectToMoveBefore, LivingObject objectToMoveAfter)
         {
-            if (Map == null) return;
+            if (Map == null) 
+                return;
             //check if object to move does exists
-            if (!Map.GridPositions.Any(livingObject => livingObject.ComparePosition(objectToMoveBefore))) return;
+            if (!Map.GridPositions.Any(livingObject => livingObject.ComparePosition(objectToMoveBefore))) 
+                return;
             //if before is player and is "me" then update global player
             if (objectToMoveBefore is Player && Player.CompareId(objectToMoveBefore))
                 Player = objectToMoveAfter as Player;
@@ -69,7 +72,7 @@ namespace ClientWPF.Logic
 
         private void DisplayMap(Game currentGame)
         {
-            Map = currentGame.Map;
+            Map = currentGame.Map; // SinaC: Map should be saved when starting game, not while displaying map
             foreach (LivingObject item in currentGame.Map.GridPositions)
             {
                 Console.SetCursorPosition(item.ObjectPosition.PositionX, 10 + item.ObjectPosition.PositionY); // 10 should be replaced with map parameters

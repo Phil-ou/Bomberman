@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using Common.Log;
 
 namespace ClientWPF.Helpers
 {
@@ -24,7 +25,7 @@ namespace ClientWPF.Helpers
             catch (Exception ex)
             {
                 // TODO
-                //Log.WriteLine(Log.LogLevels.Error, "Exception raised in ExecuteOnUIThread. {0}", ex);
+                Log.WriteLine(Log.LogLevels.Error, "Exception raised in ExecuteOnUIThread. {0}", ex);
             }
         }
 
@@ -37,7 +38,7 @@ namespace ClientWPF.Helpers
             catch (Exception ex)
             {
                 // TODO
-                //Log.WriteLine(Log.LogLevels.Error, "Exception raised in ExecuteOnUIThread. {0}", ex);
+                Log.WriteLine(Log.LogLevels.Error, "Exception raised in ExecuteOnUIThread. {0}", ex);
             }
         }
     }

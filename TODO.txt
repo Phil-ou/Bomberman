@@ -13,8 +13,8 @@ Server -> Client
 	OnUserConnected(to everyone except sender):		inform every player that a new played is connected to server (response to Login)
 	OnUserDisconnected(to everyone except sender):	inform every player that a player has disconnected (response to Logout or when disconnection is detected)
 	OnGameStarted(to everyone):						inform every player that a new game has started (response to StartGame)
-	OnMoved(to Move sender):						inform player that it's move is successfull or not (response toMove)
-	OnBombPlaced(to PlaceBomb sender):				inform player that it's bomb drop is successfull or not (response to OnBombPlaced)
+	OnMoved(to Move sender):						inform player that its move is successfull or not (response toMove)
+	OnBombPlaced(to PlaceBomb sender):				inform player that its bomb drop is successfull or not (response to OnBombPlaced)
 	OnChatReceived(to everyone except Chat sender):	message received
 	OnEntityAdded(to everyone):						bomb, bonus appearing
 	OnEntityDeleted(to everyone):					bomb exploded, bonus caught, player lost
@@ -40,9 +40,9 @@ OnGameStarted(Location start, Map map)
 OnMoved(bool succeed, Location old, Location new)
 OnBombPlaced()
 OnChatReceived(int playerId, string msg)
-OnEntityAdded(Entity entity, Location location)
-OnEntityDeleted(Entity entity, Location location)
-OnEntityMoved(Entity entity, Location old, Location new)
+OnEntityAdded(EntityTypes entity, Location location)
+OnEntityDeleted(EntityTypes entity, Location location)
+OnEntityMoved(EntityTypes entity, Location old, Location new)
 OnKilled(int playerId)
 OnGameDraw()
 OnGameLost()

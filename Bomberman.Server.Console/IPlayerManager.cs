@@ -18,6 +18,8 @@ namespace Bomberman.Server.Console
 
         IEnumerable<IPlayer> Players { get; }
 
+        int GetId(IPlayer player);
+
         IPlayer this[string name] { get; }
         IPlayer this[int index] { get; }
         IPlayer this[IBombermanCallback callback] { get; } // Callback property from IPlayer should only be used here

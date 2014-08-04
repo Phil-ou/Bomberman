@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
@@ -74,6 +75,11 @@ namespace Bomberman.Server.Console
         public IEnumerable<IPlayer> Players
         {
             get { return _players.Where(x => x != null); }
+        }
+
+        public int GetId(IPlayer player)
+        {
+            return player == null ? -1 : Array.IndexOf(_players, player);
         }
 
         public IPlayer this[string name]

@@ -7,7 +7,7 @@ using Bomberman.Common.DataContracts;
 namespace Bomberman.Server.Console
 {
     [ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Reentrant, InstanceContextMode = InstanceContextMode.Single)]
-    public class WCFHost : IBomberman
+    public class WCFHost : IHost
     {
         private ServiceHost _serviceHost;
 
@@ -52,6 +52,17 @@ namespace Bomberman.Server.Console
             _serviceHost.Close();
         }
 
+        #region IHost
+        
+        public event LoginHandler OnLogin;
+        public event LogoutHandler OnLogout;
+        public event StartGameHandler OnStartGame;
+        public event MoveHandler OnMove;
+        public event PlaceBombHandler OnPlaceBomb;
+        public event ChatHandler OnChat;
+
+        #endregion
+
         #region IBomberman
 
         public void Login(string playerName)
@@ -87,7 +98,9 @@ namespace Bomberman.Server.Console
             }
             if (id >= 0 && player != null && result == LoginResults.Successful)
             {
-                player.OnLogin(result, id, null); // TODO:
+                // TODO: refresh timeout
+                if (OnLogin != null)
+                    OnLogin(player, id);
             }
             else
             {
@@ -99,32 +112,82 @@ namespace Bomberman.Server.Console
 
         public void Logout()
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "Logout");
+
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                // TODO: refresh timeout
+                if (OnLogout != null)
+                    OnLogout(player);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Logout from unknown player");
         }
 
         public void StartGame(int mapId)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "StartGame {0}", mapId);
+
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                // TODO: refresh timeout
+                if (OnStartGame != null)
+                    OnStartGame(player, mapId);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "StartGame from unknown player");
         }
 
         public void Move(Directions direction)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "Move {0}", direction);
+
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                // TODO: refresh timeout
+                if (OnMove != null)
+                    OnMove(player, direction);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Move from unknown player");
         }
 
         public void PlaceBomb()
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "PlaceBomb");
+
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                // TODO: refresh timeout
+                if (OnPlaceBomb != null)
+                    OnPlaceBomb(player);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "PlaceBomb from unknown player");
         }
 
         public void Chat(string msg)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "Chat {0}", msg);
+
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                // TODO: refresh timeout
+                if (OnChat != null)
+                    OnChat(player, msg);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Chat from unknown player");
         }
 
         public void Heartbeat()
         {
-            throw new NotImplementedException();
+            // TODO: refresh timeout
         }
 
         #endregion

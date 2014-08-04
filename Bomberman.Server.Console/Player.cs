@@ -10,11 +10,18 @@ namespace Bomberman.Server.Console
         {
             Name = name;
             Callback = callback;
+            Location = new Location
+                {
+                    X = 0,
+                    Y = 0
+                };
         }
 
         #region IPlayer
 
         public string Name { get; private set; }
+
+        public Location Location { get; private set; }
 
         public IBombermanCallback Callback { get; private set; }
 

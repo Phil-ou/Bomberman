@@ -21,9 +21,13 @@ namespace Bomberman.Server.Console
 
             PlayerManager playerManager = new PlayerManager(4);
 
+            string mapPath = ConfigurationManager.AppSettings["mappath"];
+            MapManager mapManager = new MapManager();
+            mapManager.ReadMaps(mapPath);
+
             string port = ConfigurationManager.AppSettings["port"];
             WCFHost host = new WCFHost(port, playerManager, (s, callback) => new Player(s, callback));
-            Server server = new Server(host, playerManager);
+            Server server = new Server(host, playerManager, mapManager);
 
             server.Start();
 

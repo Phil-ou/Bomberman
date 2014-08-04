@@ -15,8 +15,6 @@ namespace Bomberman.Client.Console
             string baseAddress = ConfigurationManager.AppSettings["address"];
             WCFProxy proxy = new WCFProxy(client, baseAddress);
 
-            client.Connect(proxy, "SinaC");
-
             bool stopped = false;
             while (!stopped)
             {
@@ -28,6 +26,18 @@ namespace Bomberman.Client.Console
                             //
                         case ConsoleKey.X:
                             stopped = true;
+                            break;
+                            // Connect
+                        case ConsoleKey.C:
+                            client.Connect(proxy, name);
+                            break;
+                            // Chat
+                        case ConsoleKey.Z:
+                            client.Chat("Chat sample :)");
+                            break;
+                            // Start
+                        case ConsoleKey.S:
+                            client.StartGame(0);
                             break;
                     }
                 }

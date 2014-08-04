@@ -9,6 +9,6 @@ namespace Bomberman.Common.DataContracts
         public MapDescription Description { get; set; }
 
         [DataMember]
-        public EntityTypes[] MapAsArray { get; set; }
+        public EntityTypes[] MapAsArray { get; set; } // EntityTypes is a flag so mutiple entity can be place on same cell
     }
 }

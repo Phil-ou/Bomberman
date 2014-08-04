@@ -109,8 +109,8 @@ namespace Bomberman.Server.Console
                             // Set player position
                             int x = entry.index % GameMap.Description.Size;
                             int y = entry.index / GameMap.Description.Size;
-                            p.Location.X = x;
-                            p.Location.Y = y;
+                            p.LocationX = x;
+                            p.LocationY = y;
                         }
                     }
 
@@ -120,7 +120,7 @@ namespace Bomberman.Server.Console
 
                         // Inform players about game started
                         foreach (IPlayer p in _playerManager.Players)
-                            p.OnGameStarted(p.Location, GameMap);
+                            p.OnGameStarted(p.LocationX, p.LocationY, GameMap);
 
                         State = ServerStates.GameStarted;
                     }
@@ -136,7 +136,79 @@ namespace Bomberman.Server.Console
 
         private void OnMove(IPlayer player, Directions direction)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Info, "Move {0} to {1}", player.Name, direction);
+
+            // TODO: queue action
+
+            // Get old coordinates
+            int oldLocationX = player.LocationX;
+            int oldLocationY = player.LocationY;
+            int oldLocationIndex = oldLocationY*GameMap.Description.Size + oldLocationX;
+
+            // Get new coordinates
+            int stepX = 0, stepY = 0;
+            switch(direction)
+            {
+                case Directions.Left:
+                    stepX = -1;
+                    break;
+                case Directions.Right:
+                    stepX = +1;
+                    break;
+                case Directions.Up:
+                    stepY = -1;
+                    break;
+                case Directions.Down:
+                    stepY = +1;
+                    break;
+            }
+            int newLocationX = oldLocationX + stepX;
+            int newLocationY = oldLocationY + stepY;
+            int newLocationIndex = newLocationY*GameMap.Description.Size + newLocationX;
+
+            // Check if collider on new location
+            EntityTypes collider = GameMap.MapAsArray[newLocationIndex];
+            // TODO: handle other entityType
+            if (collider == EntityTypes.Empty) // can only move to empty location
+            {
+                Log.WriteLine(Log.LogLevels.Debug, "Moved successfully from {0},{1} to {2},{3}", oldLocationX, oldLocationY, newLocationX, newLocationY);
+
+                // Set new location
+                player.LocationX = newLocationX;
+                player.LocationY = newLocationY;
+
+                // Get player entity
+                EntityTypes entity = EntityTypes.Empty;
+                int id = _playerManager.GetId(player);
+                switch (id)
+                {
+                    case 0:
+                        entity = EntityTypes.Player1;
+                        break;
+                    case 1:
+                        entity = EntityTypes.Player2;
+                        break;
+                    case 2:
+                        entity = EntityTypes.Player3;
+                        break;
+                    case 3:
+                        entity = EntityTypes.Player4;
+                        break;
+                }
+
+                // Move player on map
+                GameMap.MapAsArray[oldLocationIndex] ^= entity;
+                GameMap.MapAsArray[newLocationIndex] ^= entity;
+
+                // Inform player about its new location
+                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY);
+
+                // Inform other player about player new location
+                foreach(IPlayer other in _playerManager.Players.Where(x => x != player))
+                    other.OnEntityMoved(entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
+            }
+            else
+                player.OnMoved(false, -1, -1, -1, -1);
         }
 
         private void OnPlaceBomb(IPlayer player)

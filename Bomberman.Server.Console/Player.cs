@@ -10,18 +10,16 @@ namespace Bomberman.Server.Console
         {
             Name = name;
             Callback = callback;
-            Location = new Location
-                {
-                    X = 0,
-                    Y = 0
-                };
+            LocationX = -1;
+            LocationY = -1;
         }
 
         #region IPlayer
 
         public string Name { get; private set; }
 
-        public Location Location { get; private set; }
+        public int LocationX { get; set; }
+        public int LocationY { get; set; }
 
         public IBombermanCallback Callback { get; private set; }
 
@@ -44,14 +42,14 @@ namespace Bomberman.Server.Console
             Callback.OnUserDisconnected(id);
         }
 
-        public void OnGameStarted(Location start, Map map)
+        public void OnGameStarted(int locationX, int locationY, Map map)
         {
-            Callback.OnGameStarted(start, map);
+            Callback.OnGameStarted(locationX, locationY, map);
         }
 
-        public void OnMoved(bool succeed, Location oldLocation, Location newLocation)
+        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Callback.OnMoved(succeed, oldLocation, newLocation);
+            Callback.OnMoved(succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
         }
 
         public void OnBombPlaced()
@@ -64,19 +62,19 @@ namespace Bomberman.Server.Console
             Callback.OnChatReceived(playerId, msg);
         }
 
-        public void OnEntityAdded(EntityTypes entity, Location location)
+        public void OnEntityAdded(EntityTypes entity, int locationX, int locationY)
         {
-            Callback.OnEntityAdded(entity, location);
+            Callback.OnEntityAdded(entity, locationX, locationY);
         }
 
-        public void OnEntityDeleted(EntityTypes entity, Location location)
+        public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
         {
-            Callback.OnEntityDeleted(entity, location);
+            Callback.OnEntityDeleted(entity, locationX, locationY);
         }
 
-        public void OnEntityMoved(EntityTypes entity, Location oldLocation, Location newLocation)
+        public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Callback.OnEntityMoved(entity, oldLocation, newLocation);
+            Callback.OnEntityMoved(entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
         }
 
         public void OnKilled(int playerId)

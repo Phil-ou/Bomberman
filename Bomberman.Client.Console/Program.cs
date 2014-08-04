@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using Bomberman.Common;
+using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Console
 {
@@ -10,7 +11,10 @@ namespace Bomberman.Client.Console
         {
             string name = "BOMBERMANCONSOLE_" + Guid.NewGuid().ToString().Substring(0, 5);
             Log.Initialize(ConfigurationManager.AppSettings["logpath"], name + ".log");
-            Client client = new Client();
+
+            ConsoleUI ui = new ConsoleUI();
+
+            Client client = new Client(ui);
 
             string baseAddress = ConfigurationManager.AppSettings["address"];
             WCFProxy proxy = new WCFProxy(client, baseAddress);
@@ -38,6 +42,19 @@ namespace Bomberman.Client.Console
                             // Start
                         case ConsoleKey.S:
                             client.StartGame(0);
+                            break;
+                            // Direction
+                        case ConsoleKey.UpArrow:
+                            client.Move(Directions.Up);
+                            break;
+                        case ConsoleKey.RightArrow:
+                            client.Move(Directions.Right);
+                            break;
+                        case ConsoleKey.DownArrow:
+                            client.Move(Directions.Down);
+                            break;
+                        case ConsoleKey.LeftArrow:
+                            client.Move(Directions.Left);
                             break;
                     }
                 }

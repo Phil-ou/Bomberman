@@ -43,7 +43,6 @@
     <Compile Include="Contracts\IBombermanCallback.cs" />
     <Compile Include="DataContracts\Directions.cs" />
     <Compile Include="DataContracts\EntityTypes.cs" />
-    <Compile Include="DataContracts\Location.cs" />
     <Compile Include="DataContracts\LoginResults.cs" />
     <Compile Include="DataContracts\Map.cs" />
     <Compile Include="DataContracts\MapDescription.cs" />

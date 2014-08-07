@@ -8,42 +8,46 @@ namespace Bomberman.Common.DataContracts
     public enum EntityTypes
     {
         [EnumMember]
-        Empty = 0x0000,
+        Empty =         0x00000000,
 
         [EnumMember]
-        Wall = 0x0001,
+        Wall =          0x00000001,
         [EnumMember]
-        Dust = 0x0002,
+        Dust =          0x00000002,
+        [EnumMember]
+        Bomb =          0x00000004,
 
         [EnumMember]
-        Player1 = 0x0004,
+        Player1 =       0x00000008,
         [EnumMember]
-        Player2 = 0x0008,
+        Player2 =       0x00000010,
         [EnumMember]
-        Player3 = 0x0010,
+        Player3 =       0x00000020,
         [EnumMember]
-        Player4 = 0x0020,
+        Player4 =       0x00000040,
 
         [EnumMember]
-        BombPlayer1 = 0x0040,
+        BonusA =        0x00000400,
         [EnumMember]
-        BombPlayer2 = 0x0080,
+        BonusB =        0x00000800,
         [EnumMember]
-        BombPlayer3 = 0x0100,
+        BonusC =        0x00001000,
         [EnumMember]
-        BombPlayer4 = 0x0200,
+        BonusD =        0x00002000,
+        [EnumMember]
+        BonusE =        0x00004000,
+        [EnumMember]
+        BonusF =        0x00008000,
+        [EnumMember]
+        BonusG =        0x00010000,
+        [EnumMember]
+        BonusH =        0x00020000,
+        [EnumMember]
+        BonusI =        0x00040000,
+        [EnumMember]
+        BonusJ =        0x00080000,
 
         [EnumMember]
-        BonusA = 0x0400,
-        [EnumMember]
-        BonusB = 0x0800,
-        [EnumMember]
-        BonusC = 0x1000,
-        [EnumMember]
-        BonusD = 0x2000,
-        [EnumMember]
-        BonusE = 0x4000,
-        [EnumMember]
-        BonusF = 0x8000,
+        Flames =        0x10000000
     }
 }

@@ -56,6 +56,10 @@ namespace Bomberman.Client.Console
                         case ConsoleKey.LeftArrow:
                             client.Move(Directions.Left);
                             break;
+                            // Bomb
+                        case ConsoleKey.Spacebar:
+                            client.PlaceBomb();
+                            break;
                     }
                 }
                 else

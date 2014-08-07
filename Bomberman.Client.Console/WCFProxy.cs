@@ -7,6 +7,7 @@ using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Console
 {
+    // TODO: wrap every call to proxy by an exception handler
     public class WCFProxy : IBomberman
     {
         private DuplexChannelFactory<IBomberman> _factory;
@@ -64,9 +65,14 @@ namespace Bomberman.Client.Console
             _proxy.StartGame(mapId);
         }
 
-        public void Move(Directions direction)
+        public void ChangeDirection(Directions direction)
         {
-            _proxy.Move(direction);
+            _proxy.ChangeDirection(direction);
+        }
+
+        public void Move()
+        {
+            _proxy.Move();
         }
 
         public void PlaceBomb()

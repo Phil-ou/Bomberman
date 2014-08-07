@@ -1,10 +1,13 @@
-﻿using Bomberman.Common.DataContracts;
+﻿using System;
+using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Console
 {
     public class ConsoleUI
     {
         private int _playerId;
+        private EntityTypes _playerEntity;
+        private Directions _direction;
         private Map _map;
 
         public ConsoleUI()
@@ -13,9 +16,10 @@ namespace Bomberman.Client.Console
             System.Console.SetBufferSize(80, 30);
         }
 
-        public void OnLogin(int playerId, string maps)
+        public void OnLogin(int playerId, EntityTypes playerEntity, string maps)
         {
             _playerId = playerId;
+            _playerEntity = playerEntity;
 
             System.Console.SetCursorPosition(30, 20);
             System.Console.Write("Login successful as {0}. Maps: {1}", playerId, maps);
@@ -27,20 +31,16 @@ namespace Bomberman.Client.Console
             System.Console.Write("New user connected: {0}|{1}", player, playerId);
         }
 
-        public void OnGameStarted(Map map)
+        public void OnGameStarted(Map map, Directions direction)
         {
             _map = map;
+            _direction = direction;
 
             System.Console.SetCursorPosition(30, 2);
             System.Console.Write("Game started: Map: {0},{1}", map.Description.Id, map.Description.Title);
             for(int y = 0; y < map.Description.Size; y++)
                 for(int x = 0; x < map.Description.Size; x++)
-                {
-                    int index = x + y*map.Description.Size;
-                    char c = MapEntityToChar(map.MapAsArray[index]);
-                    System.Console.SetCursorPosition(x, y);
-                    System.Console.Write(c);
-                }
+                    DisplayEntity(x, y);
         }
 
         public void OnChat(string player, string msg)
@@ -49,42 +49,215 @@ namespace Bomberman.Client.Console
             System.Console.Write("{0}:{1}", player, msg);
         }
 
-        public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
+        public void OnDirectionChanged(Directions direction, int locationX, int locationY)
         {
-            int oldIndex = oldLocationX + oldLocationY * _map.Description.Size;
-            char oldEntityChar = MapEntityToChar(_map.MapAsArray[oldIndex]);
-            int newIndex = newLocationX + newLocationY * _map.Description.Size;
-            char newEntityChar = MapEntityToChar(_map.MapAsArray[newIndex]);
+            _direction = direction;
+            DisplayEntity(locationX, locationY);
 
-            System.Console.SetCursorPosition(oldLocationX, oldLocationY);
-            System.Console.Write(oldEntityChar);
-
-            System.Console.SetCursorPosition(newLocationX, newLocationY);
-            System.Console.Write(newEntityChar);
         }
 
-        private char MapEntityToChar(EntityTypes entity)
+        public void OnEntityAdded(EntityTypes entity, int locationX, int locationY)
         {
-            // TODO: EntityTypes is a flag
-            switch (entity)
-            {
-                case EntityTypes.Wall:
-                    return '█';
-                case EntityTypes.Empty:
-                    return ' ';
-                case EntityTypes.Dust:
-                    return '.';
-                case EntityTypes.Player1:
-                    return _playerId == 0 ? 'X' : '*';
-                case EntityTypes.Player2:
-                    return _playerId == 1 ? 'X' : '*';
-                case EntityTypes.Player3:
-                    return _playerId == 2 ? 'X' : '*';
-                case EntityTypes.Player4:
-                    return _playerId == 3 ? 'X' : '*';
-                default:
-                    return '?';
-            }
+            DisplayEntity(locationX, locationY);
+        }
+
+        public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
+        {
+            DisplayEntity(locationX, locationY);
+        }
+        
+        public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
+        {
+            DisplayEntity(oldLocationX, oldLocationY);
+            DisplayEntity(newLocationX, newLocationY);
+        }
+
+        public void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
+        {
+            DisplayEntity(locationX, locationY);
+        }
+
+        public void OnGameDraw()
+        {
+            System.Console.SetCursorPosition(30, 19);
+            System.Console.Write("Game ended in a DRAW");
+        }
+
+        public void OnGameLost()
+        {
+            System.Console.SetCursorPosition(30, 19);
+            System.Console.Write("You have LOST");
+        }
+
+        public void OnGameWon(bool won, string name)
+        {
+            System.Console.SetCursorPosition(30, 19);
+            if (won)
+                System.Console.Write("You have WON");
+            else
+                System.Console.Write("Game won by {0}", name);
+        }
+
+        public void OnKilled(string name)
+        {
+            System.Console.SetCursorPosition(30, 18);
+            System.Console.Write("Player {0} killed", name);
+        }
+
+        public void Redraw()
+        {
+            for (int y = 0; y < _map.Description.Size; y++)
+                for (int x = 0; x < _map.Description.Size; x++)
+                    DisplayEntity(x, y);
+        }
+
+        //
+        private void DisplayEntity(EntityTypes entity, int x, int y)
+        {
+            ConsoleColor color = ConsoleColor.Gray;
+            if (IsFlames(entity))
+                color = ConsoleColor.Red;
+            if (IsBonus(entity))
+                color = ConsoleColor.Green;
+            if (IsBomb(entity))
+                color = ConsoleColor.Yellow;
+
+            char c = '?';
+            if (IsPlayer(entity))
+                switch (_direction)
+                {
+                    case Directions.Left:
+                        c = '<';
+                        break;
+                    case Directions.Right:
+                        c = '>';
+                        break;
+                    case Directions.Up:
+                        c = '^';
+                        break;
+                    case Directions.Down:
+                        c = 'v';
+                        break;
+                    default: 
+                        c = 'X';
+                        break;
+                }
+            else if (IsOpponent(entity))
+                c = GetOpponent(entity);
+            else if (IsBonus(entity))
+                c = GetBonus(entity);
+            else if (IsBomb(entity))
+                c = '*';
+            else if (IsWall(entity))
+                c = '█';
+            else if (IsDust(entity))
+                c = '.';
+            else if (IsEmpty(entity))
+                c = '_';
+
+            System.Console.ForegroundColor = color;
+            System.Console.SetCursorPosition(x, y);
+            System.Console.Write(c);
+
+            System.Console.ResetColor();
+        }
+
+        private void DisplayEntity(int x, int y)
+        {
+            EntityTypes entity = _map.GetEntity(x, y);
+
+            DisplayEntity(entity, x, y);
+        }
+
+        private static bool IsEmpty(EntityTypes entity)
+        {
+            return (entity & EntityTypes.Empty) == EntityTypes.Empty;
+        }
+
+        private static bool IsDust(EntityTypes entity)
+        {
+            return (entity & EntityTypes.Dust) == EntityTypes.Dust;
+        }
+
+        private static bool IsWall(EntityTypes entity)
+        {
+            return (entity & EntityTypes.Wall) == EntityTypes.Wall;
+        }
+
+        private bool IsPlayer(EntityTypes entity)
+        {
+            return (entity & _playerEntity) == _playerEntity;
+        }
+
+        private bool IsOpponent(EntityTypes entity)
+        {
+            return !IsPlayer(entity)
+                   && ((entity & EntityTypes.Player1) == EntityTypes.Player1
+                       || (entity & EntityTypes.Player2) == EntityTypes.Player2
+                       || (entity & EntityTypes.Player3) == EntityTypes.Player3
+                       || (entity & EntityTypes.Player4) == EntityTypes.Player4);
+        }
+
+        private static bool IsFlames(EntityTypes entity)
+        {
+            return (entity & EntityTypes.Flames) == EntityTypes.Flames;
+        }
+
+        private static bool IsBonus(EntityTypes entity)
+        {
+            return (entity & EntityTypes.BonusA) == EntityTypes.BonusA
+                   || (entity & EntityTypes.BonusB) == EntityTypes.BonusB
+                   || (entity & EntityTypes.BonusC) == EntityTypes.BonusC
+                   || (entity & EntityTypes.BonusD) == EntityTypes.BonusD
+                   || (entity & EntityTypes.BonusE) == EntityTypes.BonusE
+                   || (entity & EntityTypes.BonusF) == EntityTypes.BonusF
+                   || (entity & EntityTypes.BonusG) == EntityTypes.BonusG
+                   || (entity & EntityTypes.BonusH) == EntityTypes.BonusH
+                   || (entity & EntityTypes.BonusI) == EntityTypes.BonusI
+                   || (entity & EntityTypes.BonusJ) == EntityTypes.BonusJ;
+        }
+
+        private static bool IsBomb(EntityTypes entity)
+        {
+            return (entity & EntityTypes.Bomb) == EntityTypes.Bomb;
+        }
+
+        private static char GetOpponent(EntityTypes entity)
+        {
+            if ((entity & EntityTypes.Player1) == EntityTypes.Player1)
+                return '1';
+            if ((entity & EntityTypes.Player2) == EntityTypes.Player2)
+                return '2';
+            if ((entity & EntityTypes.Player3) == EntityTypes.Player3)
+                return '3';
+            if ((entity & EntityTypes.Player4) == EntityTypes.Player4)
+                return '4';
+            return '\\';
+        }
+
+        private static char GetBonus(EntityTypes entity)
+        {
+            if ((entity & EntityTypes.BonusA) == EntityTypes.BonusA)
+                return 'a';
+            if ((entity & EntityTypes.BonusB) == EntityTypes.BonusB)
+                return 'b';
+            if ((entity & EntityTypes.BonusC) == EntityTypes.BonusC)
+                return 'c';
+            if ((entity & EntityTypes.BonusD) == EntityTypes.BonusD)
+                return 'd';
+            if ((entity & EntityTypes.BonusE) == EntityTypes.BonusE)
+                return 'e';
+            if ((entity & EntityTypes.BonusF) == EntityTypes.BonusF)
+                return 'f';
+            if ((entity & EntityTypes.BonusG) == EntityTypes.BonusG)
+                return 'g';
+            if ((entity & EntityTypes.BonusH) == EntityTypes.BonusH)
+                return 'h';
+            if ((entity & EntityTypes.BonusI) == EntityTypes.BonusI)
+                return 'i';
+            if ((entity & EntityTypes.BonusJ) == EntityTypes.BonusJ)
+                return 'j';
+            return '/';
         }
     }
 }

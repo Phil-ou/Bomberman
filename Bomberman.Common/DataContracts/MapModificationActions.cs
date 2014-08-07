@@ -3,17 +3,11 @@
 namespace Bomberman.Common.DataContracts
 {
     [DataContract]
-    public enum Directions
+    public enum MapModificationActions
     {
         [EnumMember]
-        None,
+        Add,
         [EnumMember]
-        Up,
-        [EnumMember]
-        Right,
-        [EnumMember]
-        Down,
-        [EnumMember]
-        Left
+        Delete,
     }
 }

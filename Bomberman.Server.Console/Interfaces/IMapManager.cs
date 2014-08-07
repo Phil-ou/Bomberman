@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Bomberman.Common.DataContracts;
 
-namespace Bomberman.Server.Console
+namespace Bomberman.Server.Console.Interfaces
 {
     public interface IMapManager
     {

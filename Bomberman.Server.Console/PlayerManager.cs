@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
+using Bomberman.Server.Console.Interfaces;
 
 namespace Bomberman.Server.Console
 {

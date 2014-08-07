@@ -15,11 +15,13 @@ namespace Bomberman.Client.Console
         public List<MapDescription> MapDescriptions { get; private set; }
         public List<Opponent> Opponents { get; private set; }
 
-        public Map Map { get; private set; }
+        public Map GameMap { get; private set; }
         public bool IsConnected { get; private set; }
+        public bool IsPlaying { get; private set; }
         public string Name { get; private set; }
         public int Id { get; private set; }
         public EntityTypes Entity { get; private set; }
+        public Directions Direction { get; private set; }
         public int LocationX { get; private set; }
         public int LocationY { get; private set; }
 
@@ -28,6 +30,7 @@ namespace Bomberman.Client.Console
             _consoleUI = consoleUI;
 
             IsConnected = false;
+            IsPlaying = false;
         }
 
         public void Connect(WCFProxy proxy, string name)
@@ -71,54 +74,75 @@ namespace Bomberman.Client.Console
         public void StartGame(int mapId)
         {
             Log.WriteLine(Log.LogLevels.Debug, "Starting game");
-            
-            if (!IsConnected)
-            {
-                Log.WriteLine(Log.LogLevels.Warning, "Cannot start game, not connected to server");
-                return;
-            }
 
-            _proxy.StartGame(mapId);
+            if (IsConnected)
+            {
+                if (!IsPlaying)
+                    _proxy.StartGame(mapId);
+                else
+                    Log.WriteLine(Log.LogLevels.Warning, "Game already started");
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Cannot start game, not connected to server");
         }
 
         public void Move(Directions direction)
         {
             Log.WriteLine(Log.LogLevels.Debug, "Moving to {0}", direction);
 
-            _proxy.Move(direction);
+            if (IsConnected)
+            {
+                if (IsPlaying)
+                {
+                    if (direction != Directions.None)
+                    {
+                        if (Direction == direction)
+                            _proxy.Move();
+                        else
+                        {
+                            Direction = direction; // No need to wait for server response
+                            _proxy.ChangeDirection(direction);
+
+                            _consoleUI.OnDirectionChanged(Direction, LocationX, LocationY);
+                        }
+                    }
+                }
+                else
+                    Log.WriteLine(Log.LogLevels.Warning, "Game not started");
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Cannot move, not connected to server");
+        }
+
+        public void PlaceBomb()
+        {
+            Log.WriteLine(Log.LogLevels.Debug, "Placing bomb");
+
+            if (IsConnected)
+            {
+                if (IsPlaying)
+                    _proxy.PlaceBomb();
+                else
+                    Log.WriteLine(Log.LogLevels.Warning, "Game not started");
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Cannot place bomb, not connected to server");
         }
 
         #region IBombermanCallback
 
-        public void OnLogin(LoginResults result, int playerId, List<MapDescription> maps)
+        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
         {
             Log.WriteLine(Log.LogLevels.Debug, "OnLogin: Id {0} Result: {1}", playerId, result);
             if (result == LoginResults.Successful)
             {
-                Id = playerId;
                 IsConnected = true;
-
+                Id = playerId;
+                Entity = playerEntity;
                 MapDescriptions = maps;
 
                 string mapsAsString = maps == null ? String.Empty : maps.Select(x => String.Format("[{0},{1},{2}]", x.Id, x.Title, x.Size)).Aggregate((s, s1) => s + s1);
-
-                switch(playerId)
-                {
-                    case 0: 
-                        Entity = EntityTypes.Player1;
-                        break;
-                    case 1:
-                        Entity = EntityTypes.Player2;
-                        break;
-                    case 2:
-                        Entity = EntityTypes.Player3;
-                        break;
-                    case 3:
-                        Entity = EntityTypes.Player4;
-                        break;
-                }
-
-                _consoleUI.OnLogin(playerId, mapsAsString);
+                _consoleUI.OnLogin(playerId, playerEntity, mapsAsString);
             }
             else
             {
@@ -147,35 +171,51 @@ namespace Bomberman.Client.Console
         public void OnGameStarted(int locationX, int locationY, Map map)
         {
             Log.WriteLine(Log.LogLevels.Debug, "OnGameStarted: start:{0},{1} map:{2}, {3}", locationX, locationY, map.Description.Id, map.Description.Title);
-            
+
             // TODO
             LocationX = locationX;
             LocationY = locationY;
-            Map = map;
+            Direction = Directions.Up; // TODO: random direction ???
+            GameMap = map;
+            IsPlaying = true;
 
-            _consoleUI.OnGameStarted(map);
+            _consoleUI.OnGameStarted(map, Direction);
         }
 
         public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "OnMoved: succeed {0} {1},{2} -> {3},{4}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
+            Log.WriteLine(Log.LogLevels.Debug, "OnMoved: {0}: {1},{2} -> {3},{4}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
             if (succeed)
             {
-                int oldLocationIndex = oldLocationY*Map.Description.Size + oldLocationX;
-                int newLocationIndex = newLocationY * Map.Description.Size + newLocationX;
+                // Move ourself in map
+                GameMap.DeleteEntity(oldLocationX, oldLocationY, Entity);
+                GameMap.AddEntity(newLocationX, newLocationY, Entity);
 
-                Map.MapAsArray[oldLocationIndex] ^= Entity;
-                Map.MapAsArray[newLocationIndex] |= Entity;
-
+                //
                 _consoleUI.OnEntityMoved(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
+                // Set new location
                 LocationX = newLocationX;
                 LocationY = newLocationY;
             }
         }
 
-        public void OnBombPlaced()
+        public void OnBombPlaced(bool succeed, EntityTypes bomb, int locationX, int locationY)
+        {
+            Log.WriteLine(Log.LogLevels.Debug, "OnBombPlaced: succeed {0} -> {1},{2}: {3}", succeed, locationX, locationY, bomb);
+
+            if (succeed)
+            {
+                // Add bomb to map
+                GameMap.AddEntity(locationX, locationY, bomb);
+
+                //
+                _consoleUI.OnEntityAdded(bomb, locationX, locationY);
+            }
+        }
+
+        public void OnBonusPickedUp(EntityTypes bonus)
         {
             throw new NotImplementedException();
         }
@@ -183,51 +223,121 @@ namespace Bomberman.Client.Console
         public void OnChatReceived(int playerId, string msg)
         {
             Log.WriteLine(Log.LogLevels.Debug, "OnChatReceived: {0} {1}", playerId, msg);
-            // TODO
-            Log.WriteLine(Log.LogLevels.Info, "Chat received from {0}: {1}", playerId, msg);
+
+            if (playerId == Id)
+                _consoleUI.OnChat(Name, msg);
+            else
+            {
+                Opponent player = Opponents.FirstOrDefault(x => x.Id == playerId);
+                if (player != null)
+                    _consoleUI.OnChat(player.Name, msg);
+                else
+                    Log.WriteLine(Log.LogLevels.Warning, "Msg {0} received from unknown player {1}", msg, playerId);
+            }
         }
 
         public void OnEntityAdded(EntityTypes entity, int locationX, int locationY)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "OnEntityAdded: entity {0}: {1},{2}", entity, locationX, locationY);
+
+            // Delete entity from map
+            GameMap.AddEntity(locationX, locationY, entity);
+
+            //
+            _consoleUI.OnEntityAdded(entity, locationX, locationY);
         }
 
         public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Debug, "OnEntityDeleted: entity {0}: {1},{2}", entity, locationX, locationY);
+
+            // Delete entity from map
+            GameMap.DeleteEntity(locationX, locationY, entity);
+
+            //
+            _consoleUI.OnEntityDeleted(entity, locationX, locationY);
         }
 
         public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "OnEntityMoved: entity {0} {1},{2} -> {3},{4}", entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
+            Log.WriteLine(Log.LogLevels.Debug, "OnEntityMoved: entity {0}: {1},{2} -> {3},{4}", entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
-            int oldLocationIndex = oldLocationY * Map.Description.Size + oldLocationX;
-            int newLocationIndex = newLocationY * Map.Description.Size + newLocationX;
+            // Move entity in map
+            GameMap.DeleteEntity(oldLocationX, oldLocationY, entity);
+            GameMap.AddEntity(newLocationX, newLocationY, entity);
 
-            Map.MapAsArray[oldLocationIndex] ^= entity;
-            Map.MapAsArray[newLocationIndex] |= entity;
+            //
+            _consoleUI.OnEntityMoved(entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
+        }
 
-            _consoleUI.OnEntityMoved(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
+        public void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
+        {
+            Log.WriteLine(Log.LogLevels.Debug, "OnEntityTransformed: {0},{1}: {2} -> {3}", locationX, locationY, oldEntity, newEntity);
+
+            // Transform entity in map
+            GameMap.DeleteEntity(locationX, locationY, oldEntity);
+            GameMap.AddEntity(locationX, locationY, newEntity);
+
+            //
+            _consoleUI.OnEntityTransformed(oldEntity, newEntity, locationX, locationY);
+        }
+
+        public void OnMapModified(List<MapModification> modifications)
+        {
+            Log.WriteLine(Log.LogLevels.Debug, "OnMapModified: count:{0}", modifications.Count);
+
+            foreach(MapModification modification in modifications)
+            switch(modification.Action)
+            {
+                case MapModificationActions.Add:
+                    GameMap.AddEntity(modification.X, modification.Y, modification.Entity);
+                    break;
+                    case MapModificationActions.Delete:
+                    GameMap.DeleteEntity(modification.X, modification.Y, modification.Entity);
+                    break;
+                default:
+                    Log.WriteLine(Log.LogLevels.Error, "Invalid modification action: {0}", modification.Action);
+                    break;
+            }
+
+            //
+            _consoleUI.Redraw();
         }
 
         public void OnKilled(int playerId)
         {
-            throw new NotImplementedException();
+            Opponent player = Opponents.FirstOrDefault(x => x.Id == playerId);
+            if (player != null)
+                _consoleUI.OnKilled(player.Name);
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Unknown player killed {0}", playerId);
         }
 
         public void OnGameDraw()
         {
-            throw new NotImplementedException();
+            IsPlaying = false;
+            _consoleUI.OnGameDraw();
         }
 
         public void OnGameLost()
         {
-            throw new NotImplementedException();
+            IsPlaying = false;
+            _consoleUI.OnGameLost();
         }
 
         public void OnGameWon(int playerId)
         {
-            throw new NotImplementedException();
+            IsPlaying = false;
+            if (playerId == Id)
+                _consoleUI.OnGameWon(true, Name);
+            else
+            {
+                Opponent player = Opponents.FirstOrDefault(x => x.Id == playerId);
+                if (player != null)
+                    _consoleUI.OnGameWon(false, player.Name);
+                else
+                    Log.WriteLine(Log.LogLevels.Warning, "Game won by an unknown player {0}", playerId);
+            }
         }
 
         public void OnPing()

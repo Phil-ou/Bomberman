@@ -3,6 +3,7 @@ using System.ServiceModel;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
+using Bomberman.Server.Console.Interfaces;
 
 namespace Bomberman.Server.Console
 {
@@ -57,6 +58,7 @@ namespace Bomberman.Server.Console
         public event LoginHandler OnLogin;
         public event LogoutHandler OnLogout;
         public event StartGameHandler OnStartGame;
+        public event ChangeDirectionHandler OnChangeDirection;
         public event MoveHandler OnMove;
         public event PlaceBombHandler OnPlaceBomb;
         public event ChatHandler OnChat;
@@ -106,7 +108,7 @@ namespace Bomberman.Server.Console
             {
                 Log.WriteLine(Log.LogLevels.Info, "Register failed for player {0}", playerName);
                 //
-                Callback.OnLogin(result, -1, null);
+                Callback.OnLogin(result, -1, EntityTypes.Empty, null);
             }
         }
 
@@ -140,16 +142,31 @@ namespace Bomberman.Server.Console
                 Log.WriteLine(Log.LogLevels.Warning, "StartGame from unknown player");
         }
 
-        public void Move(Directions direction)
+        public void ChangeDirection(Directions direction)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "Move {0}", direction);
+            Log.WriteLine(Log.LogLevels.Debug, "ChangeDirection {0}", direction);
+
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                // TODO: refresh timeout
+                if (OnChangeDirection != null)
+                    OnChangeDirection(player, direction);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "ChangeDirection from unknown player");
+        }
+
+        public void Move()
+        {
+            Log.WriteLine(Log.LogLevels.Debug, "Move {0}");
 
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
                 // TODO: refresh timeout
                 if (OnMove != null)
-                    OnMove(player, direction);
+                    OnMove(player);
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Move from unknown player");

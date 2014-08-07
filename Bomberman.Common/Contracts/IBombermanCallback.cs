@@ -7,7 +7,7 @@ namespace Bomberman.Common.Contracts
     public interface IBombermanCallback
     {
         [OperationContract(IsOneWay = true)]
-        void OnLogin(LoginResults result, int playerId, List<MapDescription> maps);
+        void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps);
 
         [OperationContract(IsOneWay = true)]
         void OnUserConnected(string username, int playerId);
@@ -22,7 +22,10 @@ namespace Bomberman.Common.Contracts
         void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
 
         [OperationContract(IsOneWay = true)]
-        void OnBombPlaced();
+        void OnBombPlaced(bool succeed, EntityTypes bomb, int locationX, int locationY);
+
+        [OperationContract(IsOneWay = true)]
+        void OnBonusPickedUp(EntityTypes bonus);
 
         [OperationContract(IsOneWay = true)]
         void OnChatReceived(int playerId, string msg);
@@ -35,6 +38,12 @@ namespace Bomberman.Common.Contracts
 
         [OperationContract(IsOneWay = true)]
         void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
+
+        [OperationContract(IsOneWay = true)]
+        void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY);
+
+        [OperationContract(IsOneWay = true)]
+        void OnMapModified(List<MapModification> modifications);
 
         [OperationContract(IsOneWay = true)]
         void OnKilled(int playerId);

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Bomberman.Common;
 using Bomberman.Common.DataContracts;
+using Bomberman.Server.Console.Interfaces;
 
 namespace Bomberman.Server.Console
 {
@@ -108,10 +109,10 @@ namespace Bomberman.Server.Console
                 case 'w': return EntityTypes.Wall;
                 case ' ': return EntityTypes.Empty;
                 case '.': return EntityTypes.Dust;
-                case '0': return EntityTypes.Player1;
-                case '1': return EntityTypes.Player2;
-                case '2': return EntityTypes.Player3;
-                case '3': return EntityTypes.Player4;
+                case '1': return EntityTypes.Player1;
+                case '2': return EntityTypes.Player2;
+                case '3': return EntityTypes.Player3;
+                case '4': return EntityTypes.Player4;
                 default:
                     Log.WriteLine(Log.LogLevels.Error, "Invalid cell {0} -> empty", c);
                     return EntityTypes.Empty;

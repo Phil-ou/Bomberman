@@ -58,7 +58,6 @@ namespace Bomberman.Server.Console
         public event LoginHandler OnLogin;
         public event LogoutHandler OnLogout;
         public event StartGameHandler OnStartGame;
-        public event ChangeDirectionHandler OnChangeDirection;
         public event MoveHandler OnMove;
         public event PlaceBombHandler OnPlaceBomb;
         public event ChatHandler OnChat;
@@ -142,31 +141,16 @@ namespace Bomberman.Server.Console
                 Log.WriteLine(Log.LogLevels.Warning, "StartGame from unknown player");
         }
 
-        public void ChangeDirection(Directions direction)
+        public void Move(Directions direction)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "ChangeDirection {0}", direction);
-
-            IPlayer player = _playerManager[Callback];
-            if (player != null)
-            {
-                // TODO: refresh timeout
-                if (OnChangeDirection != null)
-                    OnChangeDirection(player, direction);
-            }
-            else
-                Log.WriteLine(Log.LogLevels.Warning, "ChangeDirection from unknown player");
-        }
-
-        public void Move()
-        {
-            Log.WriteLine(Log.LogLevels.Debug, "Move {0}");
+            Log.WriteLine(Log.LogLevels.Debug, "Move {0}: {1}", direction);
 
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
                 // TODO: refresh timeout
                 if (OnMove != null)
-                    OnMove(player);
+                    OnMove(player, direction);
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Move from unknown player");

@@ -6,8 +6,6 @@ namespace Bomberman.Common.DataContracts
     public enum Directions
     {
         [EnumMember]
-        None,
-        [EnumMember]
         Up,
         [EnumMember]
         Right,

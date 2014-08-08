@@ -23,7 +23,6 @@ namespace Bomberman.Server.Console
 
         public PlayerStates State { get; set; }
 
-        public Directions Direction { get; set; }
         public int LocationX { get; set; }
         public int LocationY { get; set; }
 

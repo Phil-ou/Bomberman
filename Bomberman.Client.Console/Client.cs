@@ -93,20 +93,7 @@ namespace Bomberman.Client.Console
             if (IsConnected)
             {
                 if (IsPlaying)
-                {
-                    if (direction != Directions.None)
-                    {
-                        if (Direction == direction)
-                            _proxy.Move();
-                        else
-                        {
-                            Direction = direction; // No need to wait for server response
-                            _proxy.ChangeDirection(direction);
-
-                            _consoleUI.OnDirectionChanged(Direction, LocationX, LocationY);
-                        }
-                    }
-                }
+                    _proxy.Move(direction);
                 else
                     Log.WriteLine(Log.LogLevels.Warning, "Game not started");
             }

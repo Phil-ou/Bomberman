@@ -7,7 +7,7 @@ namespace Bomberman.Server.Console.Interfaces
     {
         Connected,  // -> Playing
         Playing,    // ->  Dying|Winner
-        Dying,      // -> Dead
+        Dying,      // -> Dead  intermediate state used when a player dies to avoid warning multiple time the same death if multiple bomb are exploding at the same time on the same player for example. Player is set to Dying, then when explosion handling is done, player is set to Died
         Winner,     // -> Connected
         Dead        // -> Connected
     }
@@ -18,7 +18,6 @@ namespace Bomberman.Server.Console.Interfaces
 
         PlayerStates State { get; set; }
 
-        Directions Direction { get; set; }
         int LocationX { get; set; }
         int LocationY { get; set; }
 

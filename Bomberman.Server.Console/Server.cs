@@ -7,9 +7,6 @@ using Bomberman.Common;
 using Bomberman.Common.DataContracts;
 using Bomberman.Server.Console.Interfaces;
 
-// TODO: 
-//  bomb push
-
 namespace Bomberman.Server.Console
 {
     public enum ServerStates
@@ -18,7 +15,7 @@ namespace Bomberman.Server.Console
         GameStarted,
     }
 
-    public class Server
+    public class Server : IServerMapInteraction
     {
         private const int MaxExplosionRange = 1;
         private const int BombTimer = 3000; // in ms
@@ -39,6 +36,8 @@ namespace Bomberman.Server.Console
         private int[] _bonusTimerTable; // store timer (in ms) for each map cell (-1: no timer)
         private Task _timerTableTask;
 
+        private CellMap _cellMap; // TODO: use this instead of GameMap and timer tables
+
         public ServerStates State { get; private set; }
         public Map GameMap { get; private set; }
         public int PlayersInGameCount { get; private set; }
@@ -57,7 +56,6 @@ namespace Bomberman.Server.Console
             _host.OnLogin += OnLogin;
             _host.OnLogout += OnLogout;
             _host.OnStartGame += OnStartGame;
-            _host.OnChangeDirection += OnChangeDirection;
             _host.OnMove += OnMove;
             _host.OnPlaceBomb += OnPlaceBomb;
             _host.OnChat += OnChat;
@@ -220,22 +218,13 @@ namespace Bomberman.Server.Console
                 Log.WriteLine(Log.LogLevels.Warning, "Game already started");
         }
 
-        private void OnChangeDirection(IPlayer player, Directions direction)
+        private void OnMove(IPlayer player, Directions direction)
         {
-            Log.WriteLine(Log.LogLevels.Info, "ChangeDirection {0} to {1}", player.Name, direction);
+            Log.WriteLine(Log.LogLevels.Info, "Move {0}:{1}", player.Name, direction);
 
             if (State == ServerStates.GameStarted && player.State == PlayerStates.Playing)
                 // TODO: queue action
-                ChangeDirectionAction(player, direction);
-        }
-
-        private void OnMove(IPlayer player)
-        {
-            Log.WriteLine(Log.LogLevels.Info, "Move {0}", player.Name);
-
-            if (State == ServerStates.GameStarted && player.State == PlayerStates.Playing)
-                // TODO: queue action
-                MoveAction(player);
+                MoveAction(player, direction);
         }
 
         private void OnPlaceBomb(IPlayer player)
@@ -309,16 +298,7 @@ namespace Bomberman.Server.Console
         }
 
         // Actions
-        private void ChangeDirectionAction(IPlayer player, Directions direction)
-        {
-            Log.WriteLine(Log.LogLevels.Debug, "Direction changed successfully -> {0}", direction);
-
-            player.Direction = direction;
-
-            // No need to inform player, ChangeDirection cannot fail
-        }
-
-        private void MoveAction(IPlayer player)
+        private void MoveAction(IPlayer player, Directions direction)
         {
             // Get old coordinates
             int oldLocationX = player.LocationX;
@@ -326,7 +306,7 @@ namespace Bomberman.Server.Console
 
             // Get new coordinates
             int stepX, stepY;
-            GetDirectionSteps(player.Direction, out stepX, out stepY);
+            GetDirectionSteps(direction, out stepX, out stepY);
             int newLocationX = ComputeLocation(oldLocationX, stepX);
             int newLocationY = ComputeLocation(oldLocationY, stepY);
 
@@ -391,35 +371,24 @@ namespace Bomberman.Server.Console
             // TODO: can't place 2 bombs at the same place or a bonus+bomb
             // TODO: if place a bomb in flames -> immediate explosion
 
-            int stepX, stepY;
-            GetDirectionSteps(player.Direction, out stepX, out stepY);
-            int bombLocationX = ComputeLocation(player.LocationX, stepX);
-            int bombLocationY = ComputeLocation(player.LocationY, stepY);
+            int bombLocationX = player.LocationX;
+            int bombLocationY = player.LocationY;
 
-            EntityTypes collider = GameMap.GetEntity(bombLocationX, bombLocationY);
-            if (collider == EntityTypes.Empty) // Cannot place bomb if collider
-            {
-                // Add bomb to map
-                GameMap.AddEntity(bombLocationX, bombLocationY, EntityTypes.Bomb);
+            // Add bomb to map
+            GameMap.AddEntity(bombLocationX, bombLocationY, EntityTypes.Bomb);
 
-                // Add bomb timer to timer map
-                int index = GameMap.GetIndex(bombLocationX, bombLocationY);
-                _bombTimerTable[index] = BombTimer; // TODO: timer may be modified with bonus (+ range)
+            // Add bomb timer to timer map
+            int index = GameMap.GetIndex(bombLocationX, bombLocationY);
+            _bombTimerTable[index] = BombTimer; // TODO: timer may be modified with bonus (+ range)
 
-                // Inform player about bomb placement
-                player.OnBombPlaced(true, EntityTypes.Bomb, bombLocationX, bombLocationY);
+            // Inform player about bomb placement
+            player.OnBombPlaced(true, EntityTypes.Bomb, bombLocationX, bombLocationY);
 
-                // Inform other player about bomb placement
-                foreach (IPlayer other in _playerManager.Players.Where(p => p != player))
-                    other.OnEntityAdded(EntityTypes.Bomb, bombLocationX, bombLocationY);
+            // Inform other player about bomb placement
+            foreach (IPlayer other in _playerManager.Players.Where(p => p != player))
+                other.OnEntityAdded(EntityTypes.Bomb, bombLocationX, bombLocationY);
 
-                Log.WriteLine(Log.LogLevels.Debug, "Bomb placed by {0} at {1},{2}: {3}", player.Name, bombLocationX, bombLocationY, EntityTypes.Bomb);
-            }
-            else
-            {
-                Log.WriteLine(Log.LogLevels.Debug, "Place bomb failed");
-                player.OnBombPlaced(false, EntityTypes.Empty, -1, -1);
-            }
+            Log.WriteLine(Log.LogLevels.Debug, "Bomb placed by {0} at {1},{2}: {3}", player.Name, bombLocationX, bombLocationY, EntityTypes.Bomb);
         }
 
         private void ExplosionAction(int index)
@@ -648,9 +617,6 @@ namespace Bomberman.Server.Console
                 case Directions.Down:
                     stepY = +1;
                     break;
-                default:
-                    // NOP
-                    break;
             }
         }
 
@@ -748,6 +714,157 @@ namespace Bomberman.Server.Console
                 return EntityTypes.Flames;
             return EntityTypes.Empty;
         }
+
+        #region IServerMapInteraction
+
+        public bool IsGameStarted
+        {
+            get { return State == ServerStates.GameStarted; }
+        }
+
+        public void OnEntityAddedInMap(EntityTypes type, int x, int y)
+        {
+            foreach (IPlayer player in _playerManager.Players)
+                player.OnEntityAdded(type, x, y);
+        }
+
+        public void OnEntityDeletedInMap(EntityTypes type, int x, int y)
+        {
+            foreach (IPlayer player in _playerManager.Players)
+                player.OnEntityDeleted(type, x, y);
+        }
+
+        public void OnEntityMovedInMap(EntityTypes type, int fromX, int fromY, int toX, int toY)
+        {
+            foreach (IPlayer player in _playerManager.Players)
+                player.OnEntityMoved(type, fromX, fromY, toX, toY);
+        }
+
+        public void OnExplosion(int x, int y, int range)
+        {
+            List<MapModification> modifications = GenerateExplosionModifications__(x, y, true, range);
+
+            if (modifications.Any())
+            {
+                foreach (IPlayer player in _playerManager.Players)
+                    player.OnMapModified(modifications);
+            }
+
+            CheckDeathsAndWinnerOrDraw();
+        }
+
+        private void HandleExplosionModification__(List<MapModification> list, Entity entity, MapModificationActions action)
+        {
+            switch (action)
+            {
+                case MapModificationActions.Add:
+                    _cellMap.AddEntity(entity);
+                    break;
+                case MapModificationActions.Delete:
+                    _cellMap.RemoveEntity(entity);
+                    break;
+            }
+            MapModification modification = new MapModification
+            {
+                X = entity.X,
+                Y = entity.Y,
+                Entity = entity.Type,
+                Action = action
+            };
+            list.Add(modification);
+        }
+
+        private List<MapModification> GenerateExplosionModifications__(int x, int y, bool addFlames, int explosionRange)
+        {
+            List<MapModification> modifications = new List<MapModification>();
+
+            Log.WriteLine(Log.LogLevels.Debug, "Explosion at {0}, {1}", x, y);
+
+            Cell cell = _cellMap.GetCell(x, y);
+
+            // Destroy dust
+            if (cell.Any(e => e.IsDust))
+            {
+                foreach (Entity entity in cell.Where(e => e.IsDust))
+                {
+                    Log.WriteLine(Log.LogLevels.Debug, "Dust removed at {0},{1}", x, y);
+                    HandleExplosionModification__(modifications, entity, MapModificationActions.Delete);
+                }
+            }
+
+            // Kill player
+            if (cell.Any(e => e.IsPlayer))
+            {
+                foreach (Entity entity in cell.Where(e => e.IsPlayer))
+                {
+                    IPlayer player = _playerManager.Players.FirstOrDefault(p => p.PlayerEntity == entity.Type);
+                    if (player != null)
+                    {
+                        int id = _playerManager.GetId(player);
+                        Log.WriteLine(Log.LogLevels.Info, "Player {0}|{1} dead due to explosion at {2},{3}: {4}", player.Name, id, x, y, entity);
+                        // Kill player (will be killed definitively when every explosion modification will be done)
+                        player.State = PlayerStates.Dying;
+                    }
+                    else
+                        Log.WriteLine(Log.LogLevels.Error, "Dying player not found in player list at {0},{1}: {2}", x, y, entity);
+                }
+            }
+
+            if (addFlames)
+            {
+                // Create flame
+                FlameEntity flame = new FlameEntity(x, y, FlameTimer);
+                HandleExplosionModification__(modifications, flame, MapModificationActions.Add);
+
+                Log.WriteLine(Log.LogLevels.Debug, "Flame at {0},{1}", x, y);
+            }
+
+            if (cell.Any(e => e.IsBomb)) // Bomb found, check neighbourhood
+            {
+                foreach (Entity entity in cell.Where(e => e.IsBomb))
+                {
+                    Log.WriteLine(Log.LogLevels.Debug, "Bomb at {0},{1}", x, y);
+
+                    // Remove bombs
+                    Log.WriteLine(Log.LogLevels.Debug, "Remove bomb at {0},{1}", x, y);
+                    HandleExplosionModification__(modifications, entity, MapModificationActions.Delete);
+
+                    // Check explosion in surrounding cell and remove cell
+                    for (int neighbourIndex = 0; neighbourIndex < BombNeighboursX.Length; neighbourIndex++)
+                        for (int range = 1; range <= explosionRange; range++)
+                        {
+                            int stepX = BombNeighboursX[neighbourIndex] * range;
+                            int stepY = BombNeighboursY[neighbourIndex] * range;
+                            int neighbourX = ComputeLocation(x, stepX);
+                            int neighbourY = ComputeLocation(y, stepY);
+
+                            // Stop explosion propagation if wall found
+                            Cell neighbourCell = _cellMap.GetCell(neighbourX, neighbourY);
+                            if (neighbourCell.Any(e => e.IsWall))
+                            {
+                                Log.WriteLine(Log.LogLevels.Debug, "Stop propagating explosion {0},{1} -> {2},{3} wall found", x, y, neighbourX, neighbourY);
+                                break;
+                            }
+
+                            Log.WriteLine(Log.LogLevels.Debug, "Propagating explosion to neighbourhood {0},{1} -> {2},{3}", x, y, neighbourX, neighbourY);
+
+                            List<MapModification> neighbourModifications = GenerateExplosionModifications(neighbourX, neighbourY, addFlames, range);
+                            modifications.AddRange(neighbourModifications);
+                        }
+                    Log.WriteLine(Log.LogLevels.Debug, "Bomb completed at {0},{1}", x, y);
+                }
+            }
+
+            return modifications;
+        }
+
+        #endregion
+    }
+
+    public interface ITimedEntity
+    {
+        bool IsTimeoutElapsed(DateTime now);
+        void TimeoutAction(DateTime now, CellMap map);
     }
 
     public class Entity
@@ -762,19 +879,67 @@ namespace Bomberman.Server.Console
             X = x;
             Y = y;
         }
+
+        public bool IsPlayer
+        {
+            get
+            {
+                return Type == EntityTypes.Player1
+                       || Type  == EntityTypes.Player2
+                       || Type  == EntityTypes.Player3
+                       || Type == EntityTypes.Player4;
+            }
+        }
+
+        public bool IsFlames
+        {
+            get { return Type == EntityTypes.Flames; }
+        }
+
+        public bool IsEmpty
+        {
+            get { return Type == EntityTypes.Empty; }
+        }
+
+        public bool IsDust
+        {
+            get { return Type == EntityTypes.Dust; }
+        }
+
+        public bool IsBomb
+        {
+            get { return Type == EntityTypes.Bomb; }
+        }
+
+        public bool IsWall
+        {
+            get { return Type == EntityTypes.Wall; }
+        }
     }
 
-    public class BombEntity : Entity
+    public class BombEntity : Entity, ITimedEntity
     {
-        public BombEntity(int x, int y, int range, int delayInMs)
+        public IPlayer Player { get; private set; }
+
+        public int Range { get; private set; }
+        public DateTime ExplosionRemainingTimeout { get; private set; } // in ms
+
+        public bool IsMoving { get; private set; }
+        public Directions Direction { get; private set; }
+        public int MoveDelay { get; private set; }
+        public DateTime NextMoveRemainingTimeout { get; private set; } // in ms
+
+        public BombEntity(IPlayer player, int x, int y, int range, int delayInMs)
             : base(EntityTypes.Bomb, x, y)
         {
+            Player = player;
             Range = range;
             ExplosionRemainingTimeout = DateTime.Now.AddMilliseconds(delayInMs);
         }
 
         public void Move(Directions direction, int delayInMs)
         {
+            MoveDelay = delayInMs;
             NextMoveRemainingTimeout = DateTime.Now.AddMilliseconds(delayInMs);
             if (!IsMoving) // Cannot change direction if already moving
             {
@@ -783,33 +948,126 @@ namespace Bomberman.Server.Console
             }
         }
 
-        public int Range { get; set; }
-        public DateTime ExplosionRemainingTimeout { get; set; } // in ms
+        #region ITimedEntity
+        
+        public bool IsTimeoutElapsed(DateTime now)
+        {
+            return ExplosionRemainingTimeout <= now || NextMoveRemainingTimeout <= now;
+        }
 
-        public bool IsMoving { get; set; }
-        public Directions Direction { get; set; }
-        public DateTime NextMoveRemainingTimeout { get; set; } // in ms
+        public void TimeoutAction(DateTime now, CellMap map)
+        {
+            // Handle explosion first
+            if (ExplosionRemainingTimeout <= now)
+            {
+                map.ExplosionAction(X, Y, Range);
+            }
+            // Then move if no explosion
+            else if (NextMoveRemainingTimeout <= now)
+            {
+                //  If collider is Player or Flame (other collider only forbids move)
+                //      Move
+                //      Inform players about move
+                //      Explosion
+                //  Else, (no collider)
+                //      Move
+                //      Inform players about move
+                //      Reset move timer
+                //      Insert bomb in timed action queue
+
+                // Try to move bomb
+                int toX, toY;
+                map.ComputeNewCoordinates(this, Direction, out toX, out toY);
+                // Check collider
+                Cell destinationCell = map.GetCell(toX, toY);
+                if (destinationCell.Any(x => x.IsPlayer || x.IsFlames))
+                {
+                    // Move
+                    int fromX = X;
+                    int fromY = Y;
+                    map.MoveEntity(this, toX, toY);
+                    // Inform players about move
+                    foreach (IPlayer player in map.PlayerManager.Players)
+                        player.OnEntityMoved(Type, fromX, fromY, toX, toY);
+                    // Explosion
+                    map.ExplosionAction(X, Y, Range);
+                }
+                else if (destinationCell.All(x => x.IsEmpty))
+                {
+                    // Move
+                    int fromX = X;
+                    int fromY = Y;
+                    map.MoveEntity(this, toX, toY);
+                    // Inform players about move
+                    foreach(IPlayer player in map.PlayerManager.Players)
+                        player.OnEntityMoved(Type, fromX, fromY, toX, toY);
+                    // Reset move timer
+                    Move(Direction, MoveDelay);
+                    // Insert bomb in timed action queue
+                    map.AddTimeoutEntity(this);
+                }
+            }
+        }
+
+        #endregion
     }
 
-    public class BonusEntity : Entity
+    public class BonusEntity : Entity, ITimedEntity
     {
+        public DateTime FadeoutRemainingTimeout { get; set; } // in ms
+
         public BonusEntity(EntityTypes type, int x, int y, int delayInMs)
             : base(type, x, y)
         {
             FadeoutRemainingTimeout = DateTime.Now.AddMilliseconds(delayInMs);
         }
 
-        public DateTime FadeoutRemainingTimeout { get; set; } // in ms
+        #region ITimedEntity
+
+        public bool IsTimeoutElapsed(DateTime now)
+        {
+            return FadeoutRemainingTimeout <= now;
+        }
+        
+        public void TimeoutAction(DateTime now, CellMap map)
+        {
+            // Remove bonus from map
+            map.RemoveEntity(this);
+            // Remove bonus in every player map
+            foreach (IPlayer player in map.PlayerManager.Players)
+                player.OnEntityDeleted(Type, X, Y);
+        }
+
+        #endregion
     }
 
-    public class FlameEntity : Entity
+    public class FlameEntity : Entity, ITimedEntity
     {
-        public FlameEntity(int x, int y, int delayInMs) : base(EntityTypes.Flames, x, y)
+        public DateTime FadeoutRemainingTimeout { get; set; } // in ms
+
+        public FlameEntity(int x, int y, int delayInMs)
+            : base(EntityTypes.Flames, x, y)
         {
             FadeoutRemainingTimeout = DateTime.Now.AddMilliseconds(delayInMs);
         }
 
-        public DateTime FadeoutRemainingTimeout { get; set; } // in ms
+        #region ITimedEntity
+
+        public bool IsTimeoutElapsed(DateTime now)
+        {
+            return FadeoutRemainingTimeout <= now;
+        }
+
+        public void TimeoutAction(DateTime now, CellMap map)
+        {
+            // Remove flame from map
+            map.RemoveEntity(this);
+            // Remove flame in every player map
+            foreach (IPlayer player in map.PlayerManager.Players)
+                player.OnEntityDeleted(Type, X, Y);
+        }
+
+        #endregion
     }
 
     public class Cell : List<Entity>
@@ -820,24 +1078,65 @@ namespace Bomberman.Server.Console
         }
     }
 
+    public interface IServerMapInteraction
+    {
+        bool IsGameStarted { get; }
+
+        void OnExplosion(int x, int y, int range); // Handle explosion
+        void OnEntityAddedInMap(EntityTypes entity, int x, int y); // Warn players about entity added
+        void OnEntityDeletedInMap(EntityTypes entity, int x, int y); // Warn players about entity deleted
+        void OnEntityMovedInMap(EntityTypes entity, int fromX, int fromY, int toX, int toY);
+    }
+
     public class CellMap
     {
-        private readonly Cell[,] _cells;
+        private readonly IServerMapInteraction _serverMapInteraction;
+        private Cell[,] _cells;
+        private readonly List<ITimedEntity> _timedEntityList; // TODO: PriorityQueue allowing to remove elements anywhere
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly Task _timedEntityTask;
 
         public Map OriginalMap { get; private set; }
         public int Size { get; private set; }
+        public IPlayerManager PlayerManager { get; private set; }
 
-        public CellMap(Map map)
+        public CellMap(IServerMapInteraction serverMapInteraction, IPlayerManager playerManager)
         {
+            _serverMapInteraction = serverMapInteraction;
+            PlayerManager = playerManager;
+            _timedEntityList = new List<ITimedEntity>();
+
+            _cancellationTokenSource = new CancellationTokenSource();
+            _timedEntityTask = new Task(TimedEntityTask);
+        }
+
+        public void Initialize(Map map)
+        {
+            // Clear timed entity
+            _timedEntityList.Clear();
+            // Create cells from map
             OriginalMap = map;
             Size = map.Description.Size;
             _cells = new Cell[Size, Size];
             for (int y = 0; y < Size; y++)
-                for (int x = 0; x < Size; x++ )
+                for (int x = 0; x < Size; x++)
                     _cells[x, y] = new Cell
                     {
                         new Entity(map.GetEntity(x,y), x, y)
                     };
+        }
+
+        public void Clear()
+        {
+            _timedEntityList.Clear();
+            foreach(Cell cell in _cells)
+                cell.Clear();
+        }
+
+        public void Stop()
+        {
+            _cancellationTokenSource.Cancel();
+            _timedEntityTask.Wait(1000);
         }
 
         public Cell GetCell(int x, int y)
@@ -854,17 +1153,29 @@ namespace Bomberman.Server.Console
         {
             Cell cell = _cells[entity.X, entity.Y];
             cell.Add(entity);
+            if (entity is ITimedEntity)
+                AddTimeoutEntity(entity as ITimedEntity);
+
+            _serverMapInteraction.OnEntityAddedInMap(entity.Type, entity.X, entity.Y);
         }
 
         public void RemoveEntity(Entity entity)
         {
             Cell cell = _cells[entity.X, entity.Y];
-            cell.Remove(entity);
+            bool removed = cell.Remove(entity);
+            // Remove from timeout entities
+            if (entity is ITimedEntity)
+                _timedEntityList.RemoveAll(x => x == entity);
+
+            if (removed)
+                _serverMapInteraction.OnEntityDeletedInMap(entity.Type, entity.X, entity.Y);
         }
 
         public void MoveEntity(Entity entity, int toX, int toY)
         {
-            Cell fromCell = _cells[entity.X, entity.Y];
+            int fromX = entity.X;
+            int fromY = entity.Y;
+            Cell fromCell = _cells[fromX, fromY];
             bool entityFound = fromCell.Any(x => x == entity);
             if (entityFound)
             {
@@ -873,20 +1184,88 @@ namespace Bomberman.Server.Console
                 toCell.Add(entity);
                 entity.X = toX;
                 entity.Y = toY;
+
+                _serverMapInteraction.OnEntityMovedInMap(entity.Type, fromX, fromY, toX, toY);
             }
             else
                 Log.WriteLine(Log.LogLevels.Error, "Cell at {0},{1} doesn't contain {2}", entity.X, entity.Y, entity.Type);
         }
-    }
 
-    public class TimedCellActionList : PriorityQueue<DateTime, Entity>
-    {
-        public Entity DequeueReadyEntity()
+        public void AddTimeoutEntity(ITimedEntity entity)
         {
-            DateTime timeout = Peek();
-            if (timeout < DateTime.Now)
-                return Dequeue();
-            return null;
+            _timedEntityList.Add(entity);
+        }
+
+        public void ExplosionAction(int x, int y, int range)
+        {
+            _serverMapInteraction.OnExplosion(x, y, range);
+        }
+
+        // Tasks
+        private void TimedEntityTask()
+        {
+            const int sleepTime = 25;
+            while (true)
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    break;
+
+                // Check if map timer is elapsed
+                if (_serverMapInteraction.IsGameStarted)
+                {
+                    // Get timed out entities
+                    List<ITimedEntity> timedOutEntities = _timedEntityList.Where(x => x.IsTimeoutElapsed(DateTime.Now)).ToList();
+                    if (timedOutEntities.Any())
+                    {
+                        // Remove timed out entities from list
+                        _timedEntityList.RemoveAll(timedOutEntities.Contains);
+                        // Call timeout action
+                        foreach (ITimedEntity timedEntity in timedOutEntities)
+                            timedEntity.TimeoutAction(DateTime.Now, this);
+                    }
+                    bool signaled = _cancellationTokenSource.Token.WaitHandle.WaitOne(sleepTime);
+                    if (signaled)
+                        break;
+                }
+            }
+        }
+
+        // Helpers
+        public void ComputeNewCoordinates(Entity entity, Directions direction, out int newX, out int newY)
+        {
+            int stepX, stepY;
+            GetDirectionSteps(direction, out stepX, out stepY);
+            newX = ComputeLocation(entity.X, stepX);
+            newY = ComputeLocation(entity.Y, stepY);
+        }
+
+        private int ComputeLocation(int coord, int step)
+        {
+            coord = (coord + step) % Size;
+            if (coord < 0)
+                coord += Size;
+            return coord;
+        }
+
+        public static void GetDirectionSteps(Directions direction, out int stepX, out int stepY)
+        {
+            stepX = 0;
+            stepY = 0;
+            switch (direction)
+            {
+                case Directions.Left:
+                    stepX = -1;
+                    break;
+                case Directions.Right:
+                    stepX = +1;
+                    break;
+                case Directions.Up:
+                    stepY = -1;
+                    break;
+                case Directions.Down:
+                    stepY = +1;
+                    break;
+            }
         }
     }
 }

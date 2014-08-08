@@ -65,14 +65,9 @@ namespace Bomberman.Client.Console
             _proxy.StartGame(mapId);
         }
 
-        public void ChangeDirection(Directions direction)
+        public void Move(Directions direction)
         {
-            _proxy.ChangeDirection(direction);
-        }
-
-        public void Move()
-        {
-            _proxy.Move();
+            _proxy.Move(direction);
         }
 
         public void PlaceBomb()

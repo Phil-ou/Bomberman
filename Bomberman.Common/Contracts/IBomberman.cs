@@ -16,10 +16,7 @@ namespace Bomberman.Common.Contracts
         void StartGame(int mapId);
 
         [OperationContract(IsOneWay = true)]
-        void ChangeDirection(Directions direction);
-
-        [OperationContract(IsOneWay = true)]
-        void Move();
+        void Move(Directions direction);
 
         [OperationContract(IsOneWay = true)]
         void PlaceBomb();

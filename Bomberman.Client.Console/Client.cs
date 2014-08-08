@@ -21,7 +21,6 @@ namespace Bomberman.Client.Console
         public string Name { get; private set; }
         public int Id { get; private set; }
         public EntityTypes Entity { get; private set; }
-        public Directions Direction { get; private set; }
         public int LocationX { get; private set; }
         public int LocationY { get; private set; }
 
@@ -162,11 +161,10 @@ namespace Bomberman.Client.Console
             // TODO
             LocationX = locationX;
             LocationY = locationY;
-            Direction = Directions.Up; // TODO: random direction ???
             GameMap = map;
             IsPlaying = true;
 
-            _consoleUI.OnGameStarted(map, Direction);
+            _consoleUI.OnGameStarted(map);
         }
 
         public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)

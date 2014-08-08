@@ -7,7 +7,6 @@ namespace Bomberman.Client.Console
     {
         private int _playerId;
         private EntityTypes _playerEntity;
-        private Directions _direction;
         private Map _map;
 
         public ConsoleUI()
@@ -31,11 +30,10 @@ namespace Bomberman.Client.Console
             System.Console.Write("New user connected: {0}|{1}", player, playerId);
         }
 
-        public void OnGameStarted(Map map, Directions direction)
+        public void OnGameStarted(Map map)
         {
             _map = map;
-            _direction = direction;
-
+            
             System.Console.SetCursorPosition(30, 2);
             System.Console.Write("Game started: Map: {0},{1}", map.Description.Id, map.Description.Title);
             for(int y = 0; y < map.Description.Size; y++)
@@ -47,13 +45,6 @@ namespace Bomberman.Client.Console
         {
             System.Console.SetCursorPosition(30, 0);
             System.Console.Write("{0}:{1}", player, msg);
-        }
-
-        public void OnDirectionChanged(Directions direction, int locationX, int locationY)
-        {
-            _direction = direction;
-            DisplayEntity(locationX, locationY);
-
         }
 
         public void OnEntityAdded(EntityTypes entity, int locationX, int locationY)
@@ -124,24 +115,7 @@ namespace Bomberman.Client.Console
 
             char c = '?';
             if (IsPlayer(entity))
-                switch (_direction)
-                {
-                    case Directions.Left:
-                        c = '<';
-                        break;
-                    case Directions.Right:
-                        c = '>';
-                        break;
-                    case Directions.Up:
-                        c = '^';
-                        break;
-                    case Directions.Down:
-                        c = 'v';
-                        break;
-                    default: 
-                        c = 'X';
-                        break;
-                }
+                c = 'X';
             else if (IsOpponent(entity))
                 c = GetOpponent(entity);
             else if (IsBonus(entity))

@@ -3,14 +3,14 @@
 namespace Bomberman.Server.Console
 {
     //http://www.boyet.com/Articles/PriorityQueueCSharp3.html
-    public class PriorityQueue<TPriority, TData>
+    public class Heap<TPriority, TData>
         where TPriority:IComparable
     {
         private int _count;
         private int _capacity;
         private HeapEntry[] _heap;
 
-        public PriorityQueue()
+        public Heap()
         {
             _count = 0;
             _capacity = 15; // 15 is equal to 4 complete levels

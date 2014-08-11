@@ -22,6 +22,7 @@ namespace Bomberman.Server.Console.Interfaces
         int LocationX { get; set; }
         int LocationY { get; set; }
 
+        int BombRange { get; set; }
         int BombCount { get; set; }
         int MaxBombCount { get; set; }
         List<EntityTypes> Bonuses { get; set; }

@@ -19,7 +19,7 @@ namespace Bomberman.Common.Contracts
         void OnGameStarted(int locationX, int locationY, Map map);
 
         [OperationContract(IsOneWay = true)]
-        void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
+        void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY, EntityTypes bonus);
 
         [OperationContract(IsOneWay = true)]
         void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY);

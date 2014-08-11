@@ -179,10 +179,10 @@ namespace Bomberman.Client.Console
 
         private static bool IsBonus(EntityTypes entity)
         {
-            return (entity & EntityTypes.BonusA) == EntityTypes.BonusA
-                   || (entity & EntityTypes.BonusB) == EntityTypes.BonusB
-                   || (entity & EntityTypes.BonusC) == EntityTypes.BonusC
-                   || (entity & EntityTypes.BonusD) == EntityTypes.BonusD
+            return (entity & EntityTypes.BonusBombRange) == EntityTypes.BonusBombRange
+                   || (entity & EntityTypes.BonusNoClipping) == EntityTypes.BonusNoClipping
+                   || (entity & EntityTypes.BonusMaxBomb) == EntityTypes.BonusMaxBomb
+                   || (entity & EntityTypes.BonusBombKick) == EntityTypes.BonusBombKick
                    || (entity & EntityTypes.BonusE) == EntityTypes.BonusE
                    || (entity & EntityTypes.BonusF) == EntityTypes.BonusF
                    || (entity & EntityTypes.BonusG) == EntityTypes.BonusG
@@ -211,13 +211,13 @@ namespace Bomberman.Client.Console
 
         private static char GetBonus(EntityTypes entity)
         {
-            if ((entity & EntityTypes.BonusA) == EntityTypes.BonusA)
+            if ((entity & EntityTypes.BonusBombRange) == EntityTypes.BonusBombRange)
                 return 'a';
-            if ((entity & EntityTypes.BonusB) == EntityTypes.BonusB)
+            if ((entity & EntityTypes.BonusNoClipping) == EntityTypes.BonusNoClipping)
                 return 'b';
-            if ((entity & EntityTypes.BonusC) == EntityTypes.BonusC)
+            if ((entity & EntityTypes.BonusMaxBomb) == EntityTypes.BonusMaxBomb)
                 return 'c';
-            if ((entity & EntityTypes.BonusD) == EntityTypes.BonusD)
+            if ((entity & EntityTypes.BonusBombKick) == EntityTypes.BonusBombKick)
                 return 'd';
             if ((entity & EntityTypes.BonusE) == EntityTypes.BonusE)
                 return 'e';

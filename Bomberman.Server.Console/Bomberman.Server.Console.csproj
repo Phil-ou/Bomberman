@@ -38,6 +38,13 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\BombEntity.cs" />
+    <Compile Include="Entities\BonusEntity.cs" />
+    <Compile Include="Entities\Entity.cs" />
+    <Compile Include="Entities\EntityCell.cs" />
+    <Compile Include="Entities\EntityMap.cs" />
+    <Compile Include="Entities\FlameEntity.cs" />
+    <Compile Include="Interfaces\IEntityMap.cs" />
     <Compile Include="Interfaces\IMapManager.cs" />
     <Compile Include="Interfaces\IHost.cs" />
     <Compile Include="Interfaces\IPlayer.cs" />
@@ -46,7 +53,6 @@
     <Compile Include="MapManager.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="PlayerManager.cs" />
-    <Compile Include="Heap.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />

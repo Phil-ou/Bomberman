@@ -138,6 +138,7 @@ namespace Bomberman.Server.Console
 
                 item = next;
             }
+            _head = null;
             _count = 0;
         }
 

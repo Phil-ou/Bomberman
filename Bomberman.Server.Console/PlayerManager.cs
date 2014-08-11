@@ -22,7 +22,7 @@ namespace Bomberman.Server.Console
 
         public bool IsValid(string name)
         {
-            return true; // TODO
+            return true; // TODO: min 2 char, max 20 char, no special char, etc...
         }
 
         public bool Exists(string name)

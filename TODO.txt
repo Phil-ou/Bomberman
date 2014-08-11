@@ -1,4 +1,6 @@
-Player has an direction
-	-> ChangeDirection
-	-> Move(parameterless): move in direction
-	-> Bomb are placed in front of player instead of under player
+Occurence bonus sheet: giving each bonus %age
+
+
+Articles
+http://www.boyet.com/Articles/PriorityQueueCSharp3.html
+http://fr.wikipedia.org/wiki/Bomberman#Bonus_de_bombes

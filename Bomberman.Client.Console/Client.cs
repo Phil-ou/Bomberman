@@ -167,15 +167,18 @@ namespace Bomberman.Client.Console
             _consoleUI.OnGameStarted(map);
         }
 
-        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
+        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY, EntityTypes bonus)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "OnMoved: {0}: {1},{2} -> {3},{4}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
+            Log.WriteLine(Log.LogLevels.Debug, "OnMoved: {0}: {1},{2} -> {3},{4} | {5}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY, bonus);
 
             if (succeed)
             {
                 // Move ourself in map
                 GameMap.DeleteEntity(oldLocationX, oldLocationY, Entity);
                 GameMap.AddEntity(newLocationX, newLocationY, Entity);
+
+                // Delete bonus in map
+                GameMap.DeleteEntity(newLocationX, newLocationY, bonus);
 
                 //
                 _consoleUI.OnEntityMoved(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY);

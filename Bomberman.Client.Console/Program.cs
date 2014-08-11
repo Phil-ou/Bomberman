@@ -41,7 +41,7 @@ namespace Bomberman.Client.Console
                             break;
                             // Start
                         case ConsoleKey.S:
-                            client.StartGame(0);
+                            client.StartGame(1);
                             break;
                             // Direction
                         case ConsoleKey.UpArrow:

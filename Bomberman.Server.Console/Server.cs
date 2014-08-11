@@ -38,7 +38,7 @@ namespace Bomberman.Server.Console
         private Task _actionTask;
         private Task _timeoutActionTask;
         private readonly BlockingCollection<Action> _gameActionBlockingCollection = new BlockingCollection<Action>(new ConcurrentQueue<Action>());
-        private readonly SortedLinkedList<DateTime, Action> _timeoutActionQueue = new SortedLinkedList<DateTime, Action>();
+        private readonly SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>> _timeoutActionQueue = new SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>>();
         private readonly IEntityMap _entityMap;
         private readonly Random _random;
 
@@ -464,7 +464,7 @@ namespace Bomberman.Server.Console
                     // Reset move timer
                     bomb.InitMove(bomb.Direction, bomb.MoveDelay);
                     // Insert bomb in timed action queue
-                    EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(bomb.MoveDelay), () => MoveBombAction(bomb));
+                    EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(bomb.MoveDelay), bomb, e => MoveBombAction(e as BombEntity));
 
                     // Inform players about bomb move
                     foreach (IPlayer player in _playerManager.Players)
@@ -479,7 +479,7 @@ namespace Bomberman.Server.Console
         {
             Log.WriteLine(Log.LogLevels.Debug, "Flame fades out at {0},{1}", flame.X, flame.Y);
             // Remove flame from map
-            _entityMap.RemoveEntity(flame);
+            _entityMap.RemoveEntity(flame); // no need to remove from timeout action
             // Inform players about flame fadout
             foreach (IPlayer player in _playerManager.Players)
                 player.OnEntityDeleted(flame.Type, flame.X, flame.Y);
@@ -489,7 +489,7 @@ namespace Bomberman.Server.Console
         {
             Log.WriteLine(Log.LogLevels.Debug, "Bonus fades out at {0},{1}", bonus.X, bonus.Y);
             // Remove bonus from map
-            _entityMap.RemoveEntity(bonus);
+            _entityMap.RemoveEntity(bonus); // no need to remove from timeout action
             // Inform players about bonus fadout
             foreach (IPlayer player in _playerManager.Players)
                 player.OnEntityDeleted(bonus.Type, bonus.X, bonus.Y);
@@ -512,7 +512,7 @@ namespace Bomberman.Server.Console
                 int bombExplosionRange = player.BombRange;
 
                 // Create bomb
-                BombEntity bombEntity = new BombEntity(player, bombLocationX, bombLocationY, bombExplosionRange, BombTimer);
+                BombEntity bomb = new BombEntity(player, bombLocationX, bombLocationY, bombExplosionRange, BombTimer);
 
                 // Increase bomb count
                 player.BombCount++;
@@ -521,8 +521,8 @@ namespace Bomberman.Server.Console
                 player.OnBombPlaced(PlaceBombResults.Successful, EntityTypes.Bomb, bombLocationX, bombLocationY);
 
                 // Add bomb to map
-                _entityMap.AddEntity(bombEntity);
-                EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(BombTimer), () => ExplosionAction(bombEntity));
+                _entityMap.AddEntity(bomb);
+                EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(BombTimer), bomb, e => ExplosionAction(e as BombEntity));
 
                 // Inform other players about bomb placement
                 foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
@@ -537,7 +537,7 @@ namespace Bomberman.Server.Console
             EntityCell cell = _entityMap.GetCell(bomb.X, bomb.Y);
             if (cell.Any(e => e == bomb))
             {
-                List<MapModification> modifications = GenerateExplosionModifications(bomb.X, bomb.Y, false, bomb.Range);
+                List<MapModification> modifications = GenerateExplosionModifications(bomb.X, bomb.Y, true, bomb.Range);
 
                 if (modifications.Any())
                 {
@@ -591,14 +591,14 @@ namespace Bomberman.Server.Console
 
                     // TODO: better randomization
                     EntityTypes bonusType = EntityTypes.Empty;
-                    int random = _random.Next(5);
-                    if (random == 1)
-                        bonusType = EntityTypes.BonusBombRange;
-                    else if (random == 2)
-                        bonusType = EntityTypes.BonusNoClipping;
-                    else if (random == 3)
-                        bonusType = EntityTypes.BonusMaxBomb;
-                    else if (random == 4)
+                    //int random = _random.Next(5);
+                    //if (random == 1)
+                    //    bonusType = EntityTypes.BonusBombRange;
+                    //else if (random == 2)
+                    //    bonusType = EntityTypes.BonusNoClipping;
+                    //else if (random == 3)
+                    //    bonusType = EntityTypes.BonusMaxBomb;
+                    //else if (random == 4)
                         bonusType = EntityTypes.BonusBombKick;
                     // 0 -> no bonus
 
@@ -607,7 +607,7 @@ namespace Bomberman.Server.Console
                         // Add bonus
                         BonusEntity bonus = new BonusEntity(bonusType, x, y, 5000);
                         AddExplosionModification(modifications, bonus, MapModificationActions.Add);
-                        EnqueueTimeoutGameAction(bonus.FadeoutTimeout, () => FadeOutBonusAction(bonus));
+                        EnqueueTimeoutGameAction(bonus.FadeoutTimeout, bonus, e => FadeOutBonusAction(e as BonusEntity));
                     }
                 }
             }
@@ -639,7 +639,7 @@ namespace Bomberman.Server.Console
                     // Create flame
                     FlameEntity flame = new FlameEntity(x, y, FlameTimer);
                     AddExplosionModification(modifications, flame, MapModificationActions.Add);
-                    EnqueueTimeoutGameAction(flame.FadeoutTimeout, () => FadeOutFlameAction(flame));
+                    EnqueueTimeoutGameAction(flame.FadeoutTimeout, flame, e => FadeOutFlameAction(e as FlameEntity));
 
                     Log.WriteLine(Log.LogLevels.Debug, "Flame at {0},{1}", x, y);
                 }
@@ -655,9 +655,11 @@ namespace Bomberman.Server.Console
                 {
                     Log.WriteLine(Log.LogLevels.Debug, "Bomb at {0},{1}", x, y);
 
-                    // Remove bombs
+                    // Remove bomb
                     Log.WriteLine(Log.LogLevels.Debug, "Remove bomb at {0},{1}", x, y);
-                    AddExplosionModification(modifications, bombEntity, MapModificationActions.Delete); // TODO: remove bomb explosion timeout action
+                    AddExplosionModification(modifications, bombEntity, MapModificationActions.Delete);
+                    lock(_timeoutActionQueue)
+                        _timeoutActionQueue.RemoveAll(e => e.Item1 == bombEntity);
 
                     // Decrease bomb count
                     BombEntity bomb = bombEntity as BombEntity;
@@ -698,13 +700,13 @@ namespace Bomberman.Server.Console
             _gameActionBlockingCollection.Add(action);
         }
 
-        private void EnqueueTimeoutGameAction(DateTime timeout, Action action)
+        private void EnqueueTimeoutGameAction(DateTime timeout, Entity entity, Action<Entity> action)
         {
             lock (_timeoutActionQueue)
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Enqueue timeout action {0:HH:mm:ss.ffffff}", timeout);
 
-                _timeoutActionQueue.Enqueue(timeout, action);
+                _timeoutActionQueue.Enqueue(timeout, new Tuple<Entity, Action<Entity>>(entity, action));
             }
         }
 
@@ -749,7 +751,7 @@ namespace Bomberman.Server.Console
                 // Check if map timer is elapsed
                 while (true)
                 {
-                    Action action = null;
+                    Tuple<Entity, Action<Entity>> tuple = null;
                     lock (_timeoutActionQueue)
                     {
                         if (_timeoutActionQueue.Count > 0)
@@ -758,12 +760,12 @@ namespace Bomberman.Server.Console
                             if (DateTime.Now > timeout)
                             {
                                 Log.WriteLine(Log.LogLevels.Debug, "Dequeue timeout action {0:HH:mm:ss.ffffff}, #item in queue {1}", timeout, _timeoutActionQueue.Count);
-                                action = _timeoutActionQueue.Dequeue();
+                                tuple = _timeoutActionQueue.Dequeue();
                             }
                         }
                     }
-                    if (action != null)
-                        action();
+                    if (tuple != null)
+                        tuple.Item2(tuple.Item1);
                     else
                         break;
                 }

@@ -1,4 +1,5 @@
-﻿using Bomberman.Common.Contracts;
+﻿using System.Collections.Generic;
+using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Server.Console.Interfaces
@@ -20,6 +21,10 @@ namespace Bomberman.Server.Console.Interfaces
 
         int LocationX { get; set; }
         int LocationY { get; set; }
+
+        int BombCount { get; set; }
+        int MaxBombCount { get; set; }
+        List<EntityTypes> Bonuses { get; set; }
 
         EntityTypes PlayerEntity { get; set; }
 

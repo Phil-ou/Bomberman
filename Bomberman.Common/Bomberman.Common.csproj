@@ -48,6 +48,7 @@
     <Compile Include="DataContracts\MapDescription.cs" />
     <Compile Include="DataContracts\MapModification.cs" />
     <Compile Include="DataContracts\MapModificationActions.cs" />
+    <Compile Include="DataContracts\PlaceBombResults.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

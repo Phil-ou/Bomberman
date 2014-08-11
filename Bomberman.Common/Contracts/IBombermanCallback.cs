@@ -22,7 +22,7 @@ namespace Bomberman.Common.Contracts
         void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
 
         [OperationContract(IsOneWay = true)]
-        void OnBombPlaced(bool succeed, EntityTypes bomb, int locationX, int locationY);
+        void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY);
 
         [OperationContract(IsOneWay = true)]
         void OnBonusPickedUp(EntityTypes bonus);

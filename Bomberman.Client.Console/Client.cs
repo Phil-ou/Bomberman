@@ -186,11 +186,11 @@ namespace Bomberman.Client.Console
             }
         }
 
-        public void OnBombPlaced(bool succeed, EntityTypes bomb, int locationX, int locationY)
+        public void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "OnBombPlaced: succeed {0} -> {1},{2}: {3}", succeed, locationX, locationY, bomb);
+            Log.WriteLine(Log.LogLevels.Debug, "OnBombPlaced: succeed {0} -> {1},{2}: {3}", result, locationX, locationY, bomb);
 
-            if (succeed)
+            if (result == PlaceBombResults.Successful)
             {
                 // Add bomb to map
                 GameMap.AddEntity(locationX, locationY, bomb);

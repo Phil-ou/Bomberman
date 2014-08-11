@@ -26,6 +26,10 @@ namespace Bomberman.Server.Console
         public int LocationX { get; set; }
         public int LocationY { get; set; }
 
+        public int BombCount { get; set; }
+        public int MaxBombCount { get; set; }
+        public List<EntityTypes> Bonuses { get; set; }
+
         public EntityTypes PlayerEntity { get; set; }
 
         public IBombermanCallback Callback { get; private set; }
@@ -59,9 +63,9 @@ namespace Bomberman.Server.Console
             Callback.OnMoved(succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
         }
 
-        public void OnBombPlaced(bool succeed, EntityTypes bomb, int locationX, int locationY)
+        public void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY)
         {
-            Callback.OnBombPlaced(succeed, bomb, locationX, locationY);
+            Callback.OnBombPlaced(result, bomb, locationX, locationY);
         }
 
         public void OnBonusPickedUp(EntityTypes bonus)

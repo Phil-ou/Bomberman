@@ -8,8 +8,6 @@ using Bomberman.Common;
 using Bomberman.Common.DataContracts;
 using Bomberman.Server.Console.Interfaces;
 
-// BUG: timed action queue doesn't work in second game
-
 namespace Bomberman.Server.Console
 {
     public enum ServerStates
@@ -142,7 +140,7 @@ namespace Bomberman.Server.Console
                 Map map = _mapManager.Maps.FirstOrDefault(x => x.Description.Id == mapId);
                 if (map != null)
                 {
-                    // Clone map
+                    // Clone map because unsed player slot will be replaced with dust
                     Map clonedMap = new Map
                         {
                             Description = map.Description,
@@ -174,7 +172,7 @@ namespace Bomberman.Server.Console
                         }
                     }
 
-                    // Replace unused player with dust
+                    // Replace unused player with dust (this is the reason why we cloned the map)
                     for (int i = 0; i < clonedMap.MapAsArray.Length; i++)
                     {
                         EntityTypes entity = clonedMap.MapAsArray[i];
@@ -196,15 +194,20 @@ namespace Bomberman.Server.Console
                         }
                     }
 
-                    // Initialize cell map
+                    // Initialize cell map and replace missing player with dust
                     _cellMap.Initialize(clonedMap);
 
                     // If no problem while positioning player, let's go
                     if (!positionError)
                     {
-                        // Change player state
+                        // Change player state, bomb count, bonus
                         foreach (IPlayer p in _playerManager.Players)
+                        {
                             p.State = PlayerStates.Playing;
+                            p.BombCount = 0;
+                            p.MaxBombCount = 1;
+                            p.Bonuses = new List<EntityTypes>();
+                        }
 
                         //
                         PlayersInGameCount = _playerManager.Players.Count(x => x.State == PlayerStates.Playing);
@@ -386,7 +389,7 @@ namespace Bomberman.Server.Console
 
         private void MoveBombAction(BombEntity bomb)
         {
-            //  If collider is Player or Flame (other collider only forbids move)
+            //  If collider is Flame (other collider only forbids move)
             //      Move
             //      Inform players about move
             //      Explosion
@@ -396,7 +399,7 @@ namespace Bomberman.Server.Console
             //      Reset move timer
             //      Insert bomb in timed action queue
 
-            Cell cell = _cellMap.GetCell(bomb.X, bomb.X);
+            Cell cell = _cellMap.GetCell(bomb.X, bomb.Y);
             if (cell.Any(e => e == bomb))
             {
                 // Try to move bomb
@@ -404,7 +407,7 @@ namespace Bomberman.Server.Console
                 _cellMap.ComputeNewCoordinates(bomb, bomb.Direction, out toX, out toY);
                 // Check collider
                 Cell destinationCell = _cellMap.GetCell(toX, toY);
-                if (destinationCell.Any(x => x.IsPlayer || x.IsFlames)) // collision with player or flame -> explosion
+                if (destinationCell.Any(x => x.IsFlames)) // collision with flame -> explosion
                 {
                     // Move
                     _cellMap.MoveEntity(bomb, toX, toY);
@@ -441,24 +444,34 @@ namespace Bomberman.Server.Console
 
         private void PlaceBombAction(IPlayer player)
         {
-            // TODO: check player max bomb
-            // TODO: can't place 2 bombs at the same place or a bonus+bomb
-            // TODO: if place a bomb in flames -> immediate explosion
+            // Check max player bomb
+            if (player.BombCount >= player.MaxBombCount)
+            {
+                // Inform player about bomb fail
+                player.OnBombPlaced(PlaceBombResults.TooManyBombs, EntityTypes.Empty, -1, -1);
 
-            int bombLocationX = player.LocationX;
-            int bombLocationY = player.LocationY;
+                Log.WriteLine(Log.LogLevels.Debug, "Bomb not placed by {0} at {1},{2}: too many bomb", player.Name, player.LocationX, player.LocationY);
+            }
+            else
+            {
+                int bombLocationX = player.LocationX;
+                int bombLocationY = player.LocationY;
 
-            // Create bomb
-            BombEntity bombEntity = new BombEntity(player, bombLocationX, bombLocationY, MaxExplosionRange, BombTimer);
+                // Create bomb
+                BombEntity bombEntity = new BombEntity(player, bombLocationX, bombLocationY, MaxExplosionRange, BombTimer);
 
-            // Inform player about bomb placement
-            player.OnBombPlaced(true, EntityTypes.Bomb, bombLocationX, bombLocationY);
+                // Increase bomb count
+                player.BombCount++;
 
-            // Add bomb to map
-            _cellMap.AddEntity(bombEntity);
-            _cellMap.AddTimeoutAction(DateTime.Now.AddMilliseconds(BombTimer), () => ExplosionAction(bombEntity));
+                // Inform player about bomb placement
+                player.OnBombPlaced(PlaceBombResults.Successful, EntityTypes.Bomb, bombLocationX, bombLocationY);
 
-            Log.WriteLine(Log.LogLevels.Debug, "Bomb placed by {0} at {1},{2}: {3}", player.Name, bombLocationX, bombLocationY, EntityTypes.Bomb);
+                // Add bomb to map
+                _cellMap.AddEntity(bombEntity);
+                _cellMap.AddTimeoutAction(DateTime.Now.AddMilliseconds(BombTimer), () => ExplosionAction(bombEntity));
+
+                Log.WriteLine(Log.LogLevels.Debug, "Bomb placed by {0} at {1},{2}: {3}", player.Name, bombLocationX, bombLocationY, EntityTypes.Bomb);
+            }
         }
 
         public void ExplosionAction(BombEntity bomb)
@@ -567,6 +580,11 @@ namespace Bomberman.Server.Console
                     // Remove bombs
                     Log.WriteLine(Log.LogLevels.Debug, "Remove bomb at {0},{1}", x, y);
                     AddExplosionModification(modifications, bombEntity, MapModificationActions.Delete); // TODO: remove bomb explosion timeout action
+
+                    // Decrease bomb count
+                    BombEntity bomb = bombEntity as BombEntity;
+                    if (bomb != null)
+                        bomb.Player.BombCount--;
 
                     // Check explosion in surrounding cell and remove cell
                     for (int neighbourIndex = 0; neighbourIndex < BombNeighboursX.Length; neighbourIndex++)
@@ -840,7 +858,6 @@ namespace Bomberman.Server.Console
     {
         private readonly IServerMapInteraction _serverMapInteraction;
         private readonly object _timedEntityCollectionLock = new object();
-        //private readonly List<ITimedEntity> _timedEntityCollection;
         private readonly SortedLinkedList<DateTime, Action> _timedOutActionQueue = new SortedLinkedList<DateTime, Action>();
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly Task _timedEntityTask;
@@ -855,7 +872,6 @@ namespace Bomberman.Server.Console
         {
             _serverMapInteraction = serverMapInteraction;
             PlayerManager = playerManager;
-            //_timedEntityCollection = new List<ITimedEntity>();
             _timedOutActionQueue = new SortedLinkedList<DateTime, Action>();
 
             _cancellationTokenSource = new CancellationTokenSource();
@@ -865,8 +881,6 @@ namespace Bomberman.Server.Console
         public void Initialize(Map map)
         {
             // Clear timed entity
-            //lock (_timedEntityCollectionLock)
-            //    _timedEntityCollection.Clear();
             lock (_timedEntityCollectionLock)
                 _timedOutActionQueue.Clear();
             // Create cells from map
@@ -875,17 +889,18 @@ namespace Bomberman.Server.Console
             _cells = new Cell[Size, Size];
             for (int y = 0; y < Size; y++)
                 for (int x = 0; x < Size; x++)
+                {
+                    EntityTypes type = map.GetEntity(x, y);
                     _cells[x, y] = new Cell
-                    {
-                        new Entity(map.GetEntity(x,y), x, y)
-                    };
+                        {
+                            new Entity(type, x, y)
+                        };
+                }
         }
 
         public void Clear()
         {
             // Clear list and timed entity
-            //lock(_timedEntityCollectionLock)
-            //    _timedEntityCollection.Clear();
             lock (_timedEntityCollectionLock)
                 _timedOutActionQueue.Clear();
             if (_cells != null)
@@ -914,8 +929,6 @@ namespace Bomberman.Server.Console
         {
             Cell cell = _cells[entity.X, entity.Y];
             cell.Add(entity);
-            //if (entity is ITimedEntity)
-            //    AddTimeoutEntity(entity as ITimedEntity);
 
             _serverMapInteraction.OnEntityAddedInMap(entity.Type, entity.X, entity.Y);
         }
@@ -924,12 +937,6 @@ namespace Bomberman.Server.Console
         {
             Cell cell = _cells[entity.X, entity.Y];
             bool removed = cell.Remove(entity);
-            // Remove from timeout entities
-            //if (entity is ITimedEntity)
-            //{
-                //lock (_timedEntityCollectionLock)
-                //    _timedEntityCollection.RemoveAll(x => x == entity);
-            //}
 
             if (removed)
                 _serverMapInteraction.OnEntityDeletedInMap(entity.Type, entity.X, entity.Y);
@@ -972,19 +979,6 @@ namespace Bomberman.Server.Console
                 if (_serverMapInteraction.IsGameStarted)
                 {
                     DateTime now = DateTime.Now;
-                    //// Get timed out entities
-                    //List<ITimedEntity> timedOutEntities;
-                    //lock(_timedEntityCollectionLock)
-                    //    timedOutEntities = _timedEntityCollection.Where(x => x.IsTimeoutElapsed(now)).ToList();
-                    //if (timedOutEntities.Any())
-                    //{
-                    //    // Remove timed out entities from list
-                    //    lock (_timedEntityCollectionLock)
-                    //        _timedEntityCollection.RemoveAll(x => timedOutEntities.Contains(x) && x.IsTimeoutElapsed(now));
-                    //    // Call timeout action
-                    //    foreach (ITimedEntity timedEntity in timedOutEntities)
-                    //        timedEntity.TimeoutAction(DateTime.Now, this);
-                    //}
                     while (true)
                     {
                         Action action = null;

@@ -35,7 +35,7 @@ namespace Bomberman.Common.DataContracts
         [EnumMember]
         BonusBombKick =     0x00002000, // state (no additional effect if picked multiple times)
         [EnumMember]
-        BonusE =            0x00004000,
+        BonusFlameBomb =    0x00004000, // state (no additional effect if picked multiple times)
         [EnumMember]
         BonusF =            0x00008000,
         [EnumMember]

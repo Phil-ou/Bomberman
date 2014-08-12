@@ -9,6 +9,8 @@ using Bomberman.Common.DataContracts;
 using Bomberman.Server.Console.Entities;
 using Bomberman.Server.Console.Interfaces;
 
+// TODO: remove bomb from died player?
+
 namespace Bomberman.Server.Console
 {
     public enum ServerStates
@@ -26,6 +28,7 @@ namespace Bomberman.Server.Console
         private const int BombTimer = 3000; // in ms
         private const int FlameTimer = 500; // in ms
         private const int BombMoveTimer = 500; // in ms
+        private const int BonusTimer = 5000; // in ms
 
         private static readonly int[] BombNeighboursX = {-1, 1, 0, 0};
         private static readonly int[] BombNeighboursY = {0, 0, -1, 1};
@@ -84,6 +87,7 @@ namespace Bomberman.Server.Console
             Task.WaitAll(new [] {_actionTask, _timeoutActionTask}, 1000);
         }
 
+        // Client methods
         private void OnLogin(IPlayer player, int playerId)
         {
             Log.WriteLine(Log.LogLevels.Info, "New player {0}|{1} connected", player.Name, playerId);
@@ -277,7 +281,7 @@ namespace Bomberman.Server.Console
                 int playerId = _playerManager.GetId(player);
                 IPlayer player1 = player;
                 foreach (IPlayer other in _playerManager.Players.Where(x => x != player1))
-                    other.OnKilled(playerId);
+                    other.OnKilled(playerId, player.PlayerEntity, player.LocationX, player.LocationY);
             }
 
             //  if no player playing -> draw
@@ -380,7 +384,7 @@ namespace Bomberman.Server.Console
                     if (!bomb.IsMoving)
                     {
                         // Init move
-                        bomb.InitMove(direction, BombMoveTimer);
+                        bomb.InitMove(direction, TimeSpan.FromMilliseconds(BombMoveTimer));
                         // Perform move action immediately
                         MoveBombAction(bomb);
                     }
@@ -422,6 +426,43 @@ namespace Bomberman.Server.Console
             }
         }
 
+        private void PlaceBombAction(IPlayer player)
+        {
+            // Check max player bomb
+            if (player.BombCount >= player.MaxBombCount)
+            {
+                // Inform player about bomb fail
+                player.OnBombPlaced(PlaceBombResults.TooManyBombs, EntityTypes.Empty, -1, -1);
+
+                Log.WriteLine(Log.LogLevels.Debug, "Bomb not placed by {0} at {1},{2}: too many bomb", player.Name, player.LocationX, player.LocationY);
+            }
+            else
+            {
+                int bombLocationX = player.LocationX;
+                int bombLocationY = player.LocationY;
+                int bombExplosionRange = player.BombRange;
+
+                // Create bomb
+                BombEntity bomb = new BombEntity(player, bombLocationX, bombLocationY, bombExplosionRange, TimeSpan.FromMilliseconds(BombTimer));
+
+                // Increase bomb count
+                player.BombCount++;
+
+                // Inform player about bomb placement
+                player.OnBombPlaced(PlaceBombResults.Successful, EntityTypes.Bomb, bombLocationX, bombLocationY);
+
+                // Add bomb to map
+                _entityMap.AddEntity(bomb);
+                EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(BombTimer), bomb, e => ExplosionAction(e as BombEntity));
+
+                // Inform other players about bomb placement
+                foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
+                    p.OnEntityAdded(EntityTypes.Bomb, bombLocationX, bombLocationY);
+
+                Log.WriteLine(Log.LogLevels.Debug, "Bomb placed by {0} at {1},{2}: {3}", player.Name, bombLocationX, bombLocationY, EntityTypes.Bomb);
+            }
+        }
+
         private void MoveBombAction(BombEntity bomb)
         {
             //  If collider is Flame (other collider only forbids move)
@@ -446,6 +487,8 @@ namespace Bomberman.Server.Console
                 EntityCell destinationCell = _entityMap.GetCell(toX, toY);
                 if (destinationCell.Any(x => x.IsFlames)) // collision with flame -> explosion
                 {
+                    Log.WriteLine(Log.LogLevels.Debug, "Move bomb collision with flames -> explosion");
+
                     // Move
                     _entityMap.MoveEntity(bomb, toX, toY);
 
@@ -456,19 +499,26 @@ namespace Bomberman.Server.Console
                     // Explosion
                     ExplosionAction(bomb);
                 }
-                else if (destinationCell.All(x => x.IsEmpty))
+                else if (destinationCell.All(x => x.IsEmpty || x.IsBonus))
                 {
+                    Log.WriteLine(Log.LogLevels.Debug, "Move bomb no collision");
+
                     // Move
                     _entityMap.MoveEntity(bomb, toX, toY);
 
                     // Reset move timer
                     bomb.InitMove(bomb.Direction, bomb.MoveDelay);
                     // Insert bomb in timed action queue
-                    EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(bomb.MoveDelay), bomb, e => MoveBombAction(e as BombEntity));
+                    EnqueueTimeoutGameAction(bomb.MoveTimeout, bomb, e => MoveBombAction(e as BombEntity));
 
                     // Inform players about bomb move
                     foreach (IPlayer player in _playerManager.Players)
                         player.OnEntityMoved(bomb.Type, fromX, fromY, toX, toY);
+                }
+                else
+                {
+                    string colliderList = destinationCell.Any() ? destinationCell.Select(e => e.Type.ToString()).Aggregate((s, s1) => s + s1) : "???";
+                    Log.WriteLine(Log.LogLevels.Debug, "Move bomb collision with {0} -> stopped", colliderList);
                 }
             }
             else
@@ -495,54 +545,18 @@ namespace Bomberman.Server.Console
                 player.OnEntityDeleted(bonus.Type, bonus.X, bonus.Y);
         }
 
-        private void PlaceBombAction(IPlayer player)
-        {
-            // Check max player bomb
-            if (player.BombCount >= player.MaxBombCount)
-            {
-                // Inform player about bomb fail
-                player.OnBombPlaced(PlaceBombResults.TooManyBombs, EntityTypes.Empty, -1, -1);
-
-                Log.WriteLine(Log.LogLevels.Debug, "Bomb not placed by {0} at {1},{2}: too many bomb", player.Name, player.LocationX, player.LocationY);
-            }
-            else
-            {
-                int bombLocationX = player.LocationX;
-                int bombLocationY = player.LocationY;
-                int bombExplosionRange = player.BombRange;
-
-                // Create bomb
-                BombEntity bomb = new BombEntity(player, bombLocationX, bombLocationY, bombExplosionRange, BombTimer);
-
-                // Increase bomb count
-                player.BombCount++;
-
-                // Inform player about bomb placement
-                player.OnBombPlaced(PlaceBombResults.Successful, EntityTypes.Bomb, bombLocationX, bombLocationY);
-
-                // Add bomb to map
-                _entityMap.AddEntity(bomb);
-                EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(BombTimer), bomb, e => ExplosionAction(e as BombEntity));
-
-                // Inform other players about bomb placement
-                foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
-                    p.OnEntityAdded(EntityTypes.Bomb, bombLocationX, bombLocationY);
-
-                Log.WriteLine(Log.LogLevels.Debug, "Bomb placed by {0} at {1},{2}: {3}", player.Name, bombLocationX, bombLocationY, EntityTypes.Bomb);
-            }
-        }
-
-        public void ExplosionAction(BombEntity bomb)
+        private void ExplosionAction(BombEntity bomb)
         {
             EntityCell cell = _entityMap.GetCell(bomb.X, bomb.Y);
             if (cell.Any(e => e == bomb))
             {
-                List<MapModification> modifications = GenerateExplosionModifications(bomb.X, bomb.Y, true, bomb.Range);
+                bool addFlames = bomb.Player.Bonuses.Any(x => x == EntityTypes.BonusFlameBomb);
+                List<MapModification> modifications = GenerateExplosionModifications(bomb.X, bomb.Y, addFlames, bomb.Range);
 
                 if (modifications.Any())
                 {
                     foreach (IPlayer player in _playerManager.Players)
-                        player.OnMapModified(modifications);
+                        player.OnEntitiesModified(modifications);
                 }
 
                 CheckDeathsAndWinnerOrDraw();
@@ -580,7 +594,7 @@ namespace Bomberman.Server.Console
 
             EntityCell cell = _entityMap.GetCell(x, y);
 
-            // Destroy dust
+            // Destroy dust and generate bonus
             if (cell.Any(e => e.IsDust))
             {
                 Entity dust = cell.FirstOrDefault(e => e.IsDust);
@@ -605,7 +619,7 @@ namespace Bomberman.Server.Console
                     if (bonusType != EntityTypes.Empty)
                     {
                         // Add bonus
-                        BonusEntity bonus = new BonusEntity(bonusType, x, y, 5000);
+                        BonusEntity bonus = new BonusEntity(bonusType, x, y, TimeSpan.FromMilliseconds(BonusTimer));
                         AddExplosionModification(modifications, bonus, MapModificationActions.Add);
                         EnqueueTimeoutGameAction(bonus.FadeoutTimeout, bonus, e => FadeOutBonusAction(e as BonusEntity));
                     }
@@ -632,12 +646,12 @@ namespace Bomberman.Server.Console
                 cell.RemoveAll(toRemove.Contains);
             }
 
-            if (addFlames) // TODO: may create duplicate flames  remove existing flame timeout action and add new one
+            if (addFlames) // TODO: if flame already exists, update flame timeout
             {
                 if (cell.All(e => !e.IsFlames))
                 {
                     // Create flame
-                    FlameEntity flame = new FlameEntity(x, y, FlameTimer);
+                    FlameEntity flame = new FlameEntity(x, y, TimeSpan.FromMilliseconds(FlameTimer));
                     AddExplosionModification(modifications, flame, MapModificationActions.Add);
                     EnqueueTimeoutGameAction(flame.FadeoutTimeout, flame, e => FadeOutFlameAction(e as FlameEntity));
 
@@ -697,7 +711,7 @@ namespace Bomberman.Server.Console
 
         private void EnqueueGameAction(Action action)
         {
-            _gameActionBlockingCollection.Add(action);
+            _gameActionBlockingCollection.Add(action); // TODO: TryAdd ???
         }
 
         private void EnqueueTimeoutGameAction(DateTime timeout, Entity entity, Action<Entity> action)

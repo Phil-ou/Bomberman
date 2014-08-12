@@ -99,14 +99,14 @@ namespace Bomberman.Server.Console
             Callback.OnEntityTransformed(oldEntity, newEntity, locationX, locationY);
         }
 
-        public void OnMapModified(List<MapModification> modifications)
+        public void OnEntitiesModified(List<MapModification> modifications)
         {
-            Callback.OnMapModified(modifications);
+            Callback.OnEntitiesModified(modifications);
         }
 
-        public void OnKilled(int playerId)
+        public void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY)
         {
-            Callback.OnKilled(playerId);
+            Callback.OnKilled(playerId, playerEntity, locationX, locationY);
         }
 
         public void OnGameDraw()

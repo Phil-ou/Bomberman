@@ -43,10 +43,10 @@ namespace Bomberman.Common.Contracts
         void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY);
 
         [OperationContract(IsOneWay = true)]
-        void OnMapModified(List<MapModification> modifications);
+        void OnEntitiesModified(List<MapModification> modifications);
 
         [OperationContract(IsOneWay = true)]
-        void OnKilled(int playerId);
+        void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY);
 
         [OperationContract(IsOneWay = true)]
         void OnGameDraw();

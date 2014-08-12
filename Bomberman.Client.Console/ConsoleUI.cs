@@ -183,7 +183,7 @@ namespace Bomberman.Client.Console
                    || (entity & EntityTypes.BonusNoClipping) == EntityTypes.BonusNoClipping
                    || (entity & EntityTypes.BonusMaxBomb) == EntityTypes.BonusMaxBomb
                    || (entity & EntityTypes.BonusBombKick) == EntityTypes.BonusBombKick
-                   || (entity & EntityTypes.BonusE) == EntityTypes.BonusE
+                   || (entity & EntityTypes.BonusFlameBomb) == EntityTypes.BonusFlameBomb
                    || (entity & EntityTypes.BonusF) == EntityTypes.BonusF
                    || (entity & EntityTypes.BonusG) == EntityTypes.BonusG
                    || (entity & EntityTypes.BonusH) == EntityTypes.BonusH
@@ -219,7 +219,7 @@ namespace Bomberman.Client.Console
                 return 'c';
             if ((entity & EntityTypes.BonusBombKick) == EntityTypes.BonusBombKick)
                 return 'd';
-            if ((entity & EntityTypes.BonusE) == EntityTypes.BonusE)
+            if ((entity & EntityTypes.BonusFlameBomb) == EntityTypes.BonusFlameBomb)
                 return 'e';
             if ((entity & EntityTypes.BonusF) == EntityTypes.BonusF)
                 return 'f';

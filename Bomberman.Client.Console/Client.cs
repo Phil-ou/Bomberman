@@ -270,9 +270,9 @@ namespace Bomberman.Client.Console
             _consoleUI.OnEntityTransformed(oldEntity, newEntity, locationX, locationY);
         }
 
-        public void OnMapModified(List<MapModification> modifications)
+        public void OnEntitiesModified(List<MapModification> modifications)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "OnMapModified: count:{0}", modifications.Count);
+            Log.WriteLine(Log.LogLevels.Debug, "OnEntitiesModified: count:{0}", modifications.Count);
 
             foreach(MapModification modification in modifications)
             switch(modification.Action)
@@ -292,11 +292,15 @@ namespace Bomberman.Client.Console
             _consoleUI.Redraw();
         }
 
-        public void OnKilled(int playerId)
+        public void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY)
         {
             Opponent player = Opponents.FirstOrDefault(x => x.Id == playerId);
             if (player != null)
+            {
+                GameMap.DeleteEntity(locationX, locationY, playerEntity);
+                OnEntityDeleted(playerEntity, locationX, locationY);
                 _consoleUI.OnKilled(player.Name);
+            }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Unknown player killed {0}", playerId);
         }

@@ -13,18 +13,18 @@ namespace Bomberman.Server.Console.Entities
 
         public bool IsMoving { get; private set; }
         public Directions Direction { get; private set; }
-        public int MoveDelay { get; private set; }
+        public TimeSpan MoveDelay { get; private set; }
         public DateTime MoveTimeout { get; private set; }
 
-        public BombEntity(IPlayer player, int x, int y, int range, int delayInMs)
+        public BombEntity(IPlayer player, int x, int y, int range, TimeSpan delayInMs)
             : base(EntityTypes.Bomb, x, y)
         {
             Player = player;
             Range = range;
-            ExplosionTimeout = DateTime.Now.AddMilliseconds(delayInMs);
+            ExplosionTimeout = DateTime.Now.Add(delayInMs);
         }
 
-        public void InitMove(Directions direction, int delayInMs)
+        public void InitMove(Directions direction, TimeSpan delayInMs)
         {
             MoveDelay = delayInMs;
             if (!IsMoving) // Cannot change direction if already moving
@@ -32,7 +32,7 @@ namespace Bomberman.Server.Console.Entities
                 Direction = direction;
                 IsMoving = true;
             }
-            MoveTimeout = DateTime.Now.AddMilliseconds(delayInMs);
+            MoveTimeout = DateTime.Now.Add(delayInMs);
         }
     }
 }

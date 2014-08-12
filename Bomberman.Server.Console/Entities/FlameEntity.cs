@@ -7,10 +7,10 @@ namespace Bomberman.Server.Console.Entities
     {
         public DateTime FadeoutTimeout { get; set; }
 
-        public FlameEntity(int x, int y, int delayInMs)
+        public FlameEntity(int x, int y, TimeSpan delayInMs)
             : base(EntityTypes.Flames, x, y)
         {
-            FadeoutTimeout = DateTime.Now.AddMilliseconds(delayInMs);
+            FadeoutTimeout = DateTime.Now.Add(delayInMs);
         }
     }
 }

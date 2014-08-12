@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Configuration;
+using System.Threading;
 using Bomberman.Common;
 using Bomberman.Common.DataContracts;
 using Bomberman.Server.Console.Entities;
@@ -20,6 +21,12 @@ namespace Bomberman.Server.Console
 
         static void Main(string[] args)
         {
+            //TimerHelper<object> timer1 = new TimerHelper<object>();
+            //timer1.TimerAction += (timer, o) => DisplayHelp();
+            //timer1.Start(TimeSpan.FromMilliseconds(500), false, null);
+            //Thread.Sleep(100);
+            //timer1.Dispose();
+
             Log.Initialize(ConfigurationManager.AppSettings["logpath"], "bomberman_server.log");
             //
             PlayerManager playerManager = new PlayerManager(4);

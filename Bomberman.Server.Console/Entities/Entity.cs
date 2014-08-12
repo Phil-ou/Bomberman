@@ -59,7 +59,7 @@ namespace Bomberman.Server.Console.Entities
                        || Type == EntityTypes.BonusNoClipping
                        || Type == EntityTypes.BonusMaxBomb
                        || Type == EntityTypes.BonusBombKick
-                       || Type == EntityTypes.BonusE
+                       || Type == EntityTypes.BonusFlameBomb
                        || Type == EntityTypes.BonusF
                        || Type == EntityTypes.BonusG
                        || Type == EntityTypes.BonusH

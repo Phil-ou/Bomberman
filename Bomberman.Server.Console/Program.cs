@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Configuration;
-using System.Text;
 using System.Threading;
 using Bomberman.Common;
 using Bomberman.Common.DataContracts;
 using Bomberman.Common.Randomizer;
-using Bomberman.Server.Console.Entities;
-using Bomberman.Server.Console.Interfaces;
+using Bomberman.Server.Entities;
+using Bomberman.Server.Interfaces;
+using Bomberman.Server.PlayerManager;
 
 namespace Bomberman.Server.Console
 {
@@ -63,16 +63,16 @@ namespace Bomberman.Server.Console
                         },
                 };
             //
-            PlayerManager playerManager = new PlayerManager(4);
+            PlayerManager.PlayerManager playerManager = new PlayerManager.PlayerManager(4);
             //
             string mapPath = ConfigurationManager.AppSettings["mappath"];
-            MapManager mapManager = new MapManager();
+            MapManager.MapManager mapManager = new MapManager.MapManager();
             mapManager.ReadMaps(mapPath);
             //
             EntityMap entityMap = new EntityMap();
             //
             string port = ConfigurationManager.AppSettings["port"];
-            WCFHost host = new WCFHost(port, playerManager, (s, callback) => new Player(s, callback));
+            WCFHost.WCFHost host = new WCFHost.WCFHost(port, playerManager, (s, callback) => new Player(s, callback));
             
             //
             Server server = new Server(host, playerManager, mapManager, entityMap, occurancies);
@@ -152,8 +152,8 @@ namespace Bomberman.Server.Console
             {
                 for (int x = 0; x < entityMap.Size; x++)
                 {
-                    EntityCell cell = entityMap.GetCell(x, y);
-                    EntityTypes entity = cell.Any() ? cell.Select(e => e.Type).Aggregate((e, e1) => e | e1) : EntityTypes.Empty;
+                    IEntityCell cell = entityMap.GetCell(x, y);
+                    EntityTypes entity = cell.Entities.Any() ? cell.Entities.Select(e => e.Type).Aggregate((e, e1) => e | e1) : EntityTypes.Empty;
                     DisplayEntity(entity);
                 }
                 System.Console.WriteLine();

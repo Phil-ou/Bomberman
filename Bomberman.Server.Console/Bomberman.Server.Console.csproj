@@ -39,27 +39,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BonusOccurancy.cs" />
-    <Compile Include="Entities\BombEntity.cs" />
-    <Compile Include="Entities\BonusEntity.cs" />
-    <Compile Include="Entities\Entity.cs" />
-    <Compile Include="Entities\EntityCell.cs" />
-    <Compile Include="Entities\EntityMap.cs" />
-    <Compile Include="Entities\FlameEntity.cs" />
-    <Compile Include="Interfaces\IEntityMap.cs" />
-    <Compile Include="Interfaces\IMapManager.cs" />
-    <Compile Include="Interfaces\IHost.cs" />
-    <Compile Include="Interfaces\IPlayer.cs" />
-    <Compile Include="Interfaces\IPlayerManager.cs" />
-    <Compile Include="Interfaces\IPriorityQueue.cs" />
-    <Compile Include="MapManager.cs" />
-    <Compile Include="Player.cs" />
-    <Compile Include="PlayerManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="SortedLinkedList.cs" />
     <Compile Include="TimerHelper.cs" />
-    <Compile Include="WCFHost.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -71,6 +55,26 @@
     <ProjectReference Include="..\Bomberman.Common\Bomberman.Common.csproj">
       <Project>{8EF92BDE-86B7-4398-9C36-484A4E1B0A87}</Project>
       <Name>Bomberman.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bomberman.Server.Entities\Bomberman.Server.Entities.csproj">
+      <Project>{77a07f55-c731-413c-81ad-b0c54c66e620}</Project>
+      <Name>Bomberman.Server.Entities</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bomberman.Server.Interfaces\Bomberman.Server.Interfaces.csproj">
+      <Project>{7c023793-113b-49a5-a517-5a6b56d5fda5}</Project>
+      <Name>Bomberman.Server.Interfaces</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bomberman.Server.MapManager\Bomberman.Server.MapManager.csproj">
+      <Project>{e3fe416d-13cb-4722-9115-20bc052c8468}</Project>
+      <Name>Bomberman.Server.MapManager</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bomberman.Server.WCFHost\Bomberman.Server.WCFHost.csproj">
+      <Project>{eaf2028e-3a42-479f-bbdf-d7af319ce676}</Project>
+      <Name>Bomberman.Server.WCFHost</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bomberman.Server.PlayerManager\Bomberman.Server.PlayerManager.csproj">
+      <Project>{e3517b84-bf1a-469c-80e5-8a8b6c11946c}</Project>
+      <Name>Bomberman.Server.PlayerManager</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

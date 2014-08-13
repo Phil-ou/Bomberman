@@ -17,7 +17,7 @@ namespace Bomberman.Client.Console
             Client client = new Client(ui);
 
             string baseAddress = ConfigurationManager.AppSettings["address"];
-            WCFProxy proxy = new WCFProxy(client, baseAddress);
+            WCFProxy.WCFProxy proxy = new WCFProxy.WCFProxy(client, baseAddress);
 
             bool stopped = false;
             while (!stopped)

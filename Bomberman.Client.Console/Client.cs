@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bomberman.Client.Interfaces;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
@@ -16,7 +17,7 @@ namespace Bomberman.Client.Console
         private const int MaxTimeoutCountBeforeDisconnection = 3;
         private const bool IsTimeoutDetectionActive = false;
 
-        private WCFProxy _proxy;
+        private IProxy _proxy;
         private readonly ConsoleUI _consoleUI;
         private DateTime _lastActionFromServer;
         private int _timeoutCount;
@@ -53,7 +54,7 @@ namespace Bomberman.Client.Console
             _keepAliveTask.Wait(1000);
         }
 
-        public void Connect(WCFProxy proxy, string name)
+        public void Connect(IProxy proxy, string name)
         {
             if (proxy == null)
                 throw new ArgumentNullException("proxy");

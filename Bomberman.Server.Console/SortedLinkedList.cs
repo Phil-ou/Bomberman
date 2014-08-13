@@ -1,5 +1,5 @@
 ﻿using System;
-using Bomberman.Server.Console.Interfaces;
+using Bomberman.Server.Interfaces;
 
 namespace Bomberman.Server.Console
 {

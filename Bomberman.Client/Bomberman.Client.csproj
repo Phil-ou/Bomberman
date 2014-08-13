@@ -4,16 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{813F3154-E517-4F9F-8681-9196904D0B53}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <ProjectGuid>{A1E10B19-B887-4F08-AE25-CC0DFA6E7185}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Bomberman.Client.Console</RootNamespace>
-    <AssemblyName>Bomberman.Client.Console</AssemblyName>
+    <RootNamespace>Bomberman.Client</RootNamespace>
+    <AssemblyName>Bomberman.Client</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,7 +22,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -33,35 +31,24 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleUI.cs" />
-    <Compile Include="Opponent.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Client.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bomberman.Client.Interfaces\Bomberman.Client.Interfaces.csproj">
       <Project>{ab2ccca6-a8a8-4c9d-a949-18b11c2eb2ad}</Project>
       <Name>Bomberman.Client.Interfaces</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Bomberman.Client.WCFProxy\Bomberman.Client.WCFProxy.csproj">
-      <Project>{cce99bfc-529a-471e-a6f7-14fdd6363f34}</Project>
-      <Name>Bomberman.Client.WCFProxy</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Bomberman.Common\Bomberman.Common.csproj">
-      <Project>{8EF92BDE-86B7-4398-9C36-484A4E1B0A87}</Project>
+      <Project>{8ef92bde-86b7-4398-9c36-484a4e1b0a87}</Project>
       <Name>Bomberman.Common</Name>
     </ProjectReference>
   </ItemGroup>

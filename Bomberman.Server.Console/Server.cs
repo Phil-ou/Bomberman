@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using Bomberman.Common;
 using Bomberman.Common.DataContracts;
 using Bomberman.Common.Randomizer;
-using Bomberman.Server.Console.Entities;
-using Bomberman.Server.Console.Interfaces;
+using Bomberman.Server.Entities;
+using Bomberman.Server.Interfaces;
 
 // TODO: remove bomb from died player?
 
@@ -375,7 +375,7 @@ namespace Bomberman.Server.Console
             int oldLocationY = player.LocationY;
 
             // Search player in cell map
-            Entity playerEntity = _entityMap.GetEntity(player.PlayerEntity, oldLocationX, oldLocationY);
+            IEntity playerEntity = _entityMap.GetEntity(player.PlayerEntity, oldLocationX, oldLocationY);
 
             // Get new coordinates
             int newLocationX, newLocationY;
@@ -383,14 +383,14 @@ namespace Bomberman.Server.Console
             
 
             // Check if collider on new location
-            EntityCell colliderCell = _entityMap.GetCell(newLocationX, newLocationY);
-            if (player.Bonuses.Any(b => b == EntityTypes.BonusNoClipping) || colliderCell.All(e => e.IsEmpty || e.IsBonus)) // can only move to empty location or bonus, or everywhere if no clip bonus
+            IEntityCell colliderCell = _entityMap.GetCell(newLocationX, newLocationY);
+            if (player.Bonuses.Any(b => b == EntityTypes.BonusNoClipping) || colliderCell.Entities.All(e => e.IsEmpty || e.IsBonus)) // can only move to empty location or bonus, or everywhere if no clip bonus
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Moved successfully from {0},{1} to {2},{3}", oldLocationX, oldLocationY, newLocationX, newLocationY);
 
                 // Get bonus if any
                 EntityTypes bonusEntity = EntityTypes.Empty;
-                BonusEntity bonus = colliderCell.FirstOrDefault(x => x.IsBonus) as BonusEntity;
+                BonusEntity bonus = colliderCell.Entities.FirstOrDefault(x => x.IsBonus) as BonusEntity;
                 if (bonus != null) // Don't add twice the same bonus
                 {
                     bonusEntity = bonus.Type;
@@ -430,7 +430,7 @@ namespace Bomberman.Server.Console
                     p.OnEntityDeleted(bonusEntity, newLocationX, newLocationY);
                 }
             }
-            else if (player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && colliderCell.Any(e => e.IsBomb)) // Can kick bomb if bonus gained
+            else if (player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && colliderCell.Entities.Any(e => e.IsBomb)) // Can kick bomb if bonus gained
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Push bomb at {0},{1}", newLocationX, newLocationY);
 
@@ -450,7 +450,7 @@ namespace Bomberman.Server.Console
                 else
                     Log.WriteLine(Log.LogLevels.Error, "Pushed bomb doesn't exist anymore at this location {0},{1}", newLocationX, newLocationY);
             }
-            else if (colliderCell.Any(e => e.IsFlames)) // dead
+            else if (colliderCell.Entities.Any(e => e.IsFlames)) // dead
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Moved successfully from {0},{1} to {2},{3} but died because of Flames", oldLocationX, oldLocationY, newLocationX, newLocationY);
 
@@ -476,7 +476,7 @@ namespace Bomberman.Server.Console
             }
             else
             {
-                string collider = colliderCell.Select(x => x.Type.ToString()).Aggregate((s, s1) => s + s1);
+                string collider = colliderCell.Entities.Select(x => x.Type.ToString()).Aggregate((s, s1) => s + s1);
                 Log.WriteLine(Log.LogLevels.Debug, "Moved from {0},{1} to {2},{3} failed because of collider {4}", oldLocationX, oldLocationY, newLocationX, newLocationY, collider);
                 player.OnMoved(false, -1, -1, -1, -1);
             }
@@ -533,15 +533,15 @@ namespace Bomberman.Server.Console
 
             int fromX = bomb.X;
             int fromY = bomb.Y;
-            EntityCell cell = _entityMap.GetCell(fromX, fromY);
-            if (cell.Any(e => e == bomb))
+            IEntityCell cell = _entityMap.GetCell(fromX, fromY);
+            if (cell.Entities.Any(e => e == bomb))
             {
                 // Try to move bomb
                 int toX, toY;
                 _entityMap.ComputeNewCoordinates(bomb, bomb.Direction, out toX, out toY);
                 // Check collider
-                EntityCell destinationCell = _entityMap.GetCell(toX, toY);
-                if (destinationCell.Any(x => x.IsFlames)) // collision with flame -> explosion
+                IEntityCell destinationCell = _entityMap.GetCell(toX, toY);
+                if (destinationCell.Entities.Any(x => x.IsFlames)) // collision with flame -> explosion
                 {
                     Log.WriteLine(Log.LogLevels.Debug, "Move bomb collision with flames -> explosion");
 
@@ -555,7 +555,7 @@ namespace Bomberman.Server.Console
                     // Explosion
                     ExplosionAction(bomb);
                 }
-                else if (destinationCell.All(x => x.IsEmpty || x.IsBonus))
+                else if (destinationCell.Entities.All(x => x.IsEmpty || x.IsBonus))
                 {
                     Log.WriteLine(Log.LogLevels.Debug, "Move bomb no collision");
 
@@ -573,7 +573,7 @@ namespace Bomberman.Server.Console
                 }
                 else
                 {
-                    string colliderList = destinationCell.Any() ? destinationCell.Select(e => e.Type.ToString()).Aggregate((s, s1) => s + s1) : "???";
+                    string colliderList = destinationCell.Entities.Any() ? destinationCell.Entities.Select(e => e.Type.ToString()).Aggregate((s, s1) => s + s1) : "???";
                     Log.WriteLine(Log.LogLevels.Debug, "Move bomb collision with {0} -> stopped", colliderList);
                 }
             }
@@ -603,8 +603,8 @@ namespace Bomberman.Server.Console
 
         private void ExplosionAction(BombEntity bomb)
         {
-            EntityCell cell = _entityMap.GetCell(bomb.X, bomb.Y);
-            if (cell.Any(e => e == bomb))
+            IEntityCell cell = _entityMap.GetCell(bomb.X, bomb.Y);
+            if (cell.Entities.Any(e => e == bomb))
             {
                 bool addFlames = bomb.Player.Bonuses.Any(x => x == EntityTypes.BonusFlameBomb);
                 List<MapModification> modifications = GenerateExplosionModifications(bomb.X, bomb.Y, addFlames, bomb.Range);
@@ -621,7 +621,7 @@ namespace Bomberman.Server.Console
                 Log.WriteLine(Log.LogLevels.Debug, "ExplosionAction on inexistant bomb at {0},{1}", bomb.X, bomb.Y);
         }
 
-        private void AddExplosionModification(List<MapModification> list, Entity entity, MapModificationActions action)
+        private void AddExplosionModification(List<MapModification> list, IEntity entity, MapModificationActions action)
         {
             switch (action)
             {
@@ -648,12 +648,12 @@ namespace Bomberman.Server.Console
 
             Log.WriteLine(Log.LogLevels.Debug, "Explosion at {0}, {1}", x, y);
 
-            EntityCell cell = _entityMap.GetCell(x, y);
+            IEntityCell cell = _entityMap.GetCell(x, y);
 
             // Destroy dust and generate bonus
-            if (cell.Any(e => e.IsDust))
+            if (cell.Entities.Any(e => e.IsDust))
             {
-                Entity dust = cell.FirstOrDefault(e => e.IsDust);
+                IEntity dust = cell.Entities.FirstOrDefault(e => e.IsDust);
                 if (dust != null)
                 {
                     Log.WriteLine(Log.LogLevels.Debug, "Dust removed at {0},{1}", x, y);
@@ -685,10 +685,10 @@ namespace Bomberman.Server.Console
             }
 
             // Kill player
-            if (cell.Any(e => e.IsPlayer))
+            if (cell.Entities.Any(e => e.IsPlayer))
             {
                 List<Entity> toRemove = new List<Entity>();
-                foreach (Entity entity in cell.Where(e => e.IsPlayer))
+                foreach (Entity entity in cell.Entities.Where(e => e.IsPlayer))
                 {
                     IPlayer player = _playerManager.Players.FirstOrDefault(p => p.PlayerEntity == entity.Type);
                     if (player != null)
@@ -701,12 +701,12 @@ namespace Bomberman.Server.Console
                         Log.WriteLine(Log.LogLevels.Error, "Dying player not found in player list at {0},{1}: {2}", x, y, entity.Type);
                     toRemove.Add(entity);
                 }
-                cell.RemoveAll(toRemove.Contains);
+                cell.Entities.RemoveAll(toRemove.Contains);
             }
 
             if (addFlames) // TODO: if flame already exists, update flame timeout
             {
-                if (cell.All(e => !e.IsFlames))
+                if (cell.Entities.All(e => !e.IsFlames))
                 {
                     // Create flame
                     FlameEntity flame = new FlameEntity(x, y, TimeSpan.FromMilliseconds(FlameTimer));
@@ -719,9 +719,9 @@ namespace Bomberman.Server.Console
                     Log.WriteLine(Log.LogLevels.Debug, "Duplicate flame at {0},{1}", x, y);
             }
 
-            if (cell.Any(e => e.IsBomb)) // Bomb found, check neighbourhood
+            if (cell.Entities.Any(e => e.IsBomb)) // Bomb found, check neighbourhood
             {
-                Entity bombEntity = cell.FirstOrDefault(e => e.IsBomb);
+                IEntity bombEntity = cell.Entities.FirstOrDefault(e => e.IsBomb);
                 //foreach (Entity bombEntity in cell.Where(e => e.IsBomb))
                 if (bombEntity != null)
                 {
@@ -748,8 +748,8 @@ namespace Bomberman.Server.Console
                             int neighbourY = _entityMap.ComputeLocation(y, stepY);
 
                             // Stop explosion propagation if wall found (TODO: should be stopped by any obstacle)
-                            EntityCell neighbourCell = _entityMap.GetCell(neighbourX, neighbourY);
-                            if (neighbourCell.Any(e => e.IsWall))
+                            IEntityCell neighbourCell = _entityMap.GetCell(neighbourX, neighbourY);
+                            if (neighbourCell.Entities.Any(e => e.IsWall))
                             {
                                 Log.WriteLine(Log.LogLevels.Debug, "Stop propagating explosion {0},{1} -> {2},{3} wall found", x, y, neighbourX, neighbourY);
                                 break;

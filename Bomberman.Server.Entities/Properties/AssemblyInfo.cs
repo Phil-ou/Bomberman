@@ -1,14 +1,15 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Bomberman.Server.Console")]
+[assembly: AssemblyTitle("Bomberman.Server.Entities")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Bomberman.Server.Console")]
+[assembly: AssemblyProduct("Bomberman.Server.Entities")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -19,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("29d704f7-5dc4-46b7-ae15-acef95739f1d")]
+[assembly: Guid("fcac9be9-bb21-408d-b699-6bcf6aec16b9")]
 
 // Version information for an assembly consists of the following four values:
 //

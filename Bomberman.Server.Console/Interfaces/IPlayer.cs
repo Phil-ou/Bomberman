@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
 
@@ -12,6 +13,8 @@ namespace Bomberman.Server.Console.Interfaces
         Winner,     // -> Connected
         Dead        // -> Connected
     }
+
+    public delegate void ConnectionLostHandler(IPlayer player);
 
     public interface IPlayer : IBombermanCallback
     {
@@ -30,5 +33,17 @@ namespace Bomberman.Server.Console.Interfaces
         EntityTypes PlayerEntity { get; set; }
 
         IBombermanCallback Callback { get; }
+
+        event ConnectionLostHandler OnConnectionLost;
+
+        // Heartbeat management
+        DateTime LastActionToClient { get; } // used to check if heartbeat is needed
+
+        // Timeout management
+        DateTime LastActionFromClient { get; }
+        int TimeoutCount { get; }
+
+        void ResetTimeout();
+        void SetTimeout();
     }
 }

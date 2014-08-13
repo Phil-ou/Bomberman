@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.ServiceModel;
+using Bomberman.Common;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
 using Bomberman.Server.Console.Interfaces;
@@ -15,6 +19,26 @@ namespace Bomberman.Server.Console
             LocationX = -1;
             LocationY = -1;
             State = PlayerStates.Connected;
+        }
+
+        private void ExceptionFreeAction(Action action, [CallerMemberName]string actionName = null)
+        {
+            try
+            {
+                action();
+                LastActionToClient = DateTime.Now;
+            }
+            catch (CommunicationObjectAbortedException)
+            {
+                if (OnConnectionLost != null)
+                    OnConnectionLost(this);
+            }
+            catch (Exception ex)
+            {
+                Log.WriteLine(Log.LogLevels.Error, "Exception:{0} {1}", actionName, ex);
+                if (OnConnectionLost != null)
+                    OnConnectionLost(this);
+            }
         }
 
         #region IPlayer
@@ -35,98 +59,118 @@ namespace Bomberman.Server.Console
 
         public IBombermanCallback Callback { get; private set; }
 
+        public event ConnectionLostHandler OnConnectionLost;
+
+        // Heartbeat management
+        public DateTime LastActionToClient { get; private set; } // used to check if heartbeat is needed
+        // Timeout management
+        public DateTime LastActionFromClient { get; private set; }
+        public int TimeoutCount { get; private set; }
+
+        public void ResetTimeout()
+        {
+            TimeoutCount = 0;
+            LastActionFromClient = DateTime.Now;
+        }
+
+        public void SetTimeout()
+        {
+            TimeoutCount++;
+            LastActionFromClient = DateTime.Now;
+        }
+
         #endregion
 
         #region IBombermanCallback
 
         public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
         {
-            Callback.OnLogin(result, playerId, playerEntity, maps);
+            ExceptionFreeAction(() => Callback.OnLogin(result, playerId, playerEntity, maps));
         }
 
         public void OnUserConnected(string username, int playerId)
         {
-            Callback.OnUserConnected(username, playerId);
+            ExceptionFreeAction(() => Callback.OnUserConnected(username, playerId));
         }
 
-        public void OnUserDisconnected(int id)
+        public void OnUserDisconnected(int playerId)
         {
-            Callback.OnUserDisconnected(id);
+            ExceptionFreeAction(() => Callback.OnUserDisconnected(playerId));
         }
 
         public void OnGameStarted(int locationX, int locationY, Map map)
         {
-            Callback.OnGameStarted(locationX, locationY, map);
+            ExceptionFreeAction(() => Callback.OnGameStarted(locationX, locationY, map));
         }
 
-        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY, EntityTypes bonus)
+        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Callback.OnMoved(succeed, oldLocationX, oldLocationY, newLocationX, newLocationY, bonus);
+            ExceptionFreeAction(() => Callback.OnMoved(succeed, oldLocationX, oldLocationY, newLocationX, newLocationY));
         }
 
         public void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY)
         {
-            Callback.OnBombPlaced(result, bomb, locationX, locationY);
+            ExceptionFreeAction(() => Callback.OnBombPlaced(result, bomb, locationX, locationY));
         }
 
-        public void OnBonusPickedUp(EntityTypes bonus)
+        public void OnBonusPickedUp(EntityTypes bonus, int locationX, int locationY)
         {
-            Callback.OnBonusPickedUp(bonus);
+            ExceptionFreeAction(() => Callback.OnBonusPickedUp(bonus, locationX, locationY));
         }
 
         public void OnChatReceived(int playerId, string msg)
         {
-            Callback.OnChatReceived(playerId, msg);
+            ExceptionFreeAction(() => Callback.OnChatReceived(playerId, msg));
         }
 
         public void OnEntityAdded(EntityTypes entity, int locationX, int locationY)
         {
-            Callback.OnEntityAdded(entity, locationX, locationY);
+            ExceptionFreeAction(() => Callback.OnEntityAdded(entity, locationX, locationY));
         }
 
         public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
         {
-            Callback.OnEntityDeleted(entity, locationX, locationY);
+            ExceptionFreeAction(() => Callback.OnEntityDeleted(entity, locationX, locationY));
         }
 
         public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Callback.OnEntityMoved(entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
+            ExceptionFreeAction(() => Callback.OnEntityMoved(entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
         }
 
         public void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
         {
-            Callback.OnEntityTransformed(oldEntity, newEntity, locationX, locationY);
+            ExceptionFreeAction(() => Callback.OnEntityTransformed(oldEntity, newEntity, locationX, locationY));
         }
 
         public void OnEntitiesModified(List<MapModification> modifications)
         {
-            Callback.OnEntitiesModified(modifications);
+            ExceptionFreeAction(() => Callback.OnEntitiesModified(modifications));
         }
 
         public void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY)
         {
-            Callback.OnKilled(playerId, playerEntity, locationX, locationY);
+            ExceptionFreeAction(() => Callback.OnKilled(playerId, playerEntity, locationX, locationY));
         }
 
         public void OnGameDraw()
         {
-            Callback.OnGameDraw();
+            ExceptionFreeAction(() => Callback.OnGameDraw());
         }
 
         public void OnGameLost()
         {
-            Callback.OnGameLost();
+            ExceptionFreeAction(() => Callback.OnGameLost());
         }
 
         public void OnGameWon(int playerId)
         {
-            Callback.OnGameWon(playerId);
+            ExceptionFreeAction(() => Callback.OnGameWon(playerId));
         }
 
         public void OnPing()
         {
-            Callback.OnPing();
+            ExceptionFreeAction(() => Callback.OnPing());
         }
 
         #endregion

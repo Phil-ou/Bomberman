@@ -30,6 +30,12 @@ namespace Bomberman.Client.Console
             System.Console.Write("New user connected: {0}|{1}", player, playerId);
         }
 
+        public void OnUserDisconnected(string player, int playerId)
+        {
+            System.Console.SetCursorPosition(30, 1);
+            System.Console.Write("User disconnected: {0}|{1}", player, playerId);
+        }
+
         public void OnGameStarted(Map map)
         {
             _map = map;
@@ -93,6 +99,13 @@ namespace Bomberman.Client.Console
         {
             System.Console.SetCursorPosition(30, 18);
             System.Console.Write("Player {0} killed", name);
+        }
+
+        public void OnConnectionLost()
+        {
+            System.Console.SetCursorPosition(30, 10);
+            System.Console.ForegroundColor = ConsoleColor.Red;
+            System.Console.Write("Connection to server lost");
         }
 
         public void Redraw()
@@ -179,13 +192,13 @@ namespace Bomberman.Client.Console
 
         private static bool IsBonus(EntityTypes entity)
         {
-            return (entity & EntityTypes.BonusBombRange) == EntityTypes.BonusBombRange
+            return (entity & EntityTypes.BonusFireUp) == EntityTypes.BonusFireUp
                    || (entity & EntityTypes.BonusNoClipping) == EntityTypes.BonusNoClipping
-                   || (entity & EntityTypes.BonusMaxBomb) == EntityTypes.BonusMaxBomb
+                   || (entity & EntityTypes.BonusBombUp) == EntityTypes.BonusBombUp
                    || (entity & EntityTypes.BonusBombKick) == EntityTypes.BonusBombKick
                    || (entity & EntityTypes.BonusFlameBomb) == EntityTypes.BonusFlameBomb
-                   || (entity & EntityTypes.BonusF) == EntityTypes.BonusF
-                   || (entity & EntityTypes.BonusG) == EntityTypes.BonusG
+                   || (entity & EntityTypes.BonusFireDown) == EntityTypes.BonusFireDown
+                   || (entity & EntityTypes.BonusBombDown) == EntityTypes.BonusBombDown
                    || (entity & EntityTypes.BonusH) == EntityTypes.BonusH
                    || (entity & EntityTypes.BonusI) == EntityTypes.BonusI
                    || (entity & EntityTypes.BonusJ) == EntityTypes.BonusJ;
@@ -211,19 +224,19 @@ namespace Bomberman.Client.Console
 
         private static char GetBonus(EntityTypes entity)
         {
-            if ((entity & EntityTypes.BonusBombRange) == EntityTypes.BonusBombRange)
+            if ((entity & EntityTypes.BonusFireUp) == EntityTypes.BonusFireUp)
                 return 'a';
             if ((entity & EntityTypes.BonusNoClipping) == EntityTypes.BonusNoClipping)
                 return 'b';
-            if ((entity & EntityTypes.BonusMaxBomb) == EntityTypes.BonusMaxBomb)
+            if ((entity & EntityTypes.BonusBombUp) == EntityTypes.BonusBombUp)
                 return 'c';
             if ((entity & EntityTypes.BonusBombKick) == EntityTypes.BonusBombKick)
                 return 'd';
             if ((entity & EntityTypes.BonusFlameBomb) == EntityTypes.BonusFlameBomb)
                 return 'e';
-            if ((entity & EntityTypes.BonusF) == EntityTypes.BonusF)
+            if ((entity & EntityTypes.BonusFireDown) == EntityTypes.BonusFireDown)
                 return 'f';
-            if ((entity & EntityTypes.BonusG) == EntityTypes.BonusG)
+            if ((entity & EntityTypes.BonusBombDown) == EntityTypes.BonusBombDown)
                 return 'g';
             if ((entity & EntityTypes.BonusH) == EntityTypes.BonusH)
                 return 'h';

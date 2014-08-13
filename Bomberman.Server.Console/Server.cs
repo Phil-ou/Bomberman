@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bomberman.Common;
 using Bomberman.Common.DataContracts;
+using Bomberman.Common.Randomizer;
 using Bomberman.Server.Console.Entities;
 using Bomberman.Server.Console.Interfaces;
 
@@ -21,6 +22,11 @@ namespace Bomberman.Server.Console
 
     public class Server
     {
+        private const int HeartbeatDelay = 300; // in ms
+        private const int TimeoutDelay = 500; // in ms
+        private const int MaxTimeoutCountBeforeDisconnection = 3;
+        private const bool IsTimeoutDetectionActive = false;
+
         private const int MinBomb = 1; // Min simultaneous bomb for a player
         private const int MinExplosionRange = 1; // Min bomb explosion range
         private const int MaxBomb = 8; // Max simultaneous bomb for a player
@@ -33,32 +39,43 @@ namespace Bomberman.Server.Console
         private static readonly int[] BombNeighboursX = {-1, 1, 0, 0};
         private static readonly int[] BombNeighboursY = {0, 0, -1, 1};
 
-        private readonly WCFHost _host;
+        private readonly IHost _host;
         private readonly IPlayerManager _playerManager;
         private readonly IMapManager _mapManager;
+        private readonly IEntityMap _entityMap;
+        private readonly List<BonusOccurancy> _bonusOccurancies;
 
         private CancellationTokenSource _cancellationTokenSource;
         private Task _actionTask;
         private Task _timeoutActionTask;
+        private Task _keepAliveTask;
+        
         private readonly BlockingCollection<Action> _gameActionBlockingCollection = new BlockingCollection<Action>(new ConcurrentQueue<Action>());
         private readonly SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>> _timeoutActionQueue = new SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>>();
-        private readonly IEntityMap _entityMap;
         private readonly Random _random;
 
         public ServerStates State { get; private set; }
         public int PlayersInGameCount { get; private set; }
 
-        public Server(WCFHost host, IPlayerManager playerManager, IMapManager mapManager, IEntityMap entityMap)
+        public Server(IHost host, IPlayerManager playerManager, IMapManager mapManager, IEntityMap entityMap, List<BonusOccurancy> bonusOccurancies)
         {
             if (host == null)
                 throw new ArgumentNullException("host");
             if (playerManager == null)
                 throw new ArgumentNullException("playerManager");
+            if (mapManager == null)
+                throw new ArgumentNullException("mapManager");
+            if (entityMap == null)
+                throw new ArgumentNullException("entityMap");
+            if (bonusOccurancies == null)
+                throw new ArgumentNullException("bonusOccurancies");
 
             _host = host;
             _playerManager = playerManager;
             _mapManager = mapManager;
             _entityMap = entityMap;
+            _bonusOccurancies = bonusOccurancies;
+
             _random = new Random();
 
             _host.OnLogin += OnLogin;
@@ -68,9 +85,11 @@ namespace Bomberman.Server.Console
             _host.OnPlaceBomb += OnPlaceBomb;
             _host.OnChat += OnChat;
 
+            _host.OnPlayerDisconnected += OnPlayerDisconnected;
+
             State = ServerStates.WaitStartGame;
         }
-
+        
         public void Start()
         {
             _host.Start();
@@ -78,16 +97,18 @@ namespace Bomberman.Server.Console
             _cancellationTokenSource = new CancellationTokenSource();
             _actionTask = Task.Factory.StartNew(GameActionTask, _cancellationTokenSource.Token);
             _timeoutActionTask = Task.Factory.StartNew(TimeoutGameActionTask, _cancellationTokenSource.Token);
+            _keepAliveTask = Task.Factory.StartNew(KeepAliveTask, _cancellationTokenSource.Token);
         }
 
         public void Stop()
         {
-            _cancellationTokenSource.Cancel();
             _host.Stop();
-            Task.WaitAll(new [] {_actionTask, _timeoutActionTask}, 1000);
+
+            _cancellationTokenSource.Cancel();
+            Task.WaitAll(new[] { _actionTask, _timeoutActionTask, _keepAliveTask }, 1000);
         }
 
-        // Client methods
+        // IHost handlers
         private void OnLogin(IPlayer player, int playerId)
         {
             Log.WriteLine(Log.LogLevels.Info, "New player {0}|{1} connected", player.Name, playerId);
@@ -129,7 +150,8 @@ namespace Bomberman.Server.Console
 
         private void OnLogout(IPlayer player)
         {
-            throw new NotImplementedException();
+            Log.WriteLine(Log.LogLevels.Info, "Player {0} logs out", player.Name);
+            RemovePlayerGracefully(player);
         }
 
         private void OnStartGame(IPlayer player, int mapId)
@@ -268,7 +290,33 @@ namespace Bomberman.Server.Console
                 other.OnChatReceived(id, msg);
         }
 
+        private void OnPlayerDisconnected(IPlayer player)
+        {
+            Log.WriteLine(Log.LogLevels.Info, "Player {0} disconnected", player.Name);
+            RemovePlayerGracefully(player);
+        }
+
         //
+        private void RemovePlayerGracefully(IPlayer player)
+        {
+            int id;
+            // Remove player from player list
+            lock (_playerManager.LockObject)
+            {
+                // Get id
+                id = _playerManager.GetId(player);
+                // Remove player from player list
+                _playerManager.Remove(player);
+            }
+
+            // Check winner or draw
+            CheckDeathsAndWinnerOrDraw();
+
+            // Inform other players
+            foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
+                p.OnUserDisconnected(id);
+        }
+
         private void CheckDeathsAndWinnerOrDraw()
         {
             // Inform dying player and other about dying player
@@ -347,10 +395,14 @@ namespace Bomberman.Server.Console
                 {
                     bonusEntity = bonus.Type;
 
-                    if (bonusEntity == EntityTypes.BonusMaxBomb) // immediate action
+                    if (bonusEntity == EntityTypes.BonusBombUp)
                         player.MaxBombCount = Math.Min(player.MaxBombCount + 1, MaxBomb);
-                    else if (bonusEntity == EntityTypes.BonusBombRange) // immediate action
-                        player.BombRange = Math.Min(player.BombRange+1, MaxExplosionRange);
+                    else if (bonusEntity == EntityTypes.BonusBombDown)
+                        player.MaxBombCount = Math.Max(player.MaxBombCount - 1, MinBomb);
+                    else if (bonusEntity == EntityTypes.BonusFireUp)
+                        player.BombRange = Math.Min(player.BombRange + 1, MaxExplosionRange);
+                    else if (bonusEntity == EntityTypes.BonusFireDown)
+                        player.BombRange = Math.Max(player.BombRange - 1, MinExplosionRange);
                     else
                         player.Bonuses.Add(bonusEntity); // state bonus
 
@@ -362,7 +414,11 @@ namespace Bomberman.Server.Console
                 player.LocationY = newLocationY;
 
                 // Inform player about its new location
-                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY, bonusEntity);
+                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY);
+
+                // Inform player about bonus picked up if any
+                if (bonusEntity != EntityTypes.Empty)
+                    player.OnBonusPickedUp(bonusEntity, newLocationX, newLocationY);
 
                 // Move player on map
                 _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
@@ -406,7 +462,7 @@ namespace Bomberman.Server.Console
                 player.LocationY = newLocationY;
 
                 // Inform player about its new location
-                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY, EntityTypes.Empty);
+                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
                 // Move player on map
                 _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
@@ -422,7 +478,7 @@ namespace Bomberman.Server.Console
             {
                 string collider = colliderCell.Select(x => x.Type.ToString()).Aggregate((s, s1) => s + s1);
                 Log.WriteLine(Log.LogLevels.Debug, "Moved from {0},{1} to {2},{3} failed because of collider {4}", oldLocationX, oldLocationY, newLocationX, newLocationY, collider);
-                player.OnMoved(false, -1, -1, -1, -1, EntityTypes.Empty);
+                player.OnMoved(false, -1, -1, -1, -1);
             }
         }
 
@@ -603,18 +659,20 @@ namespace Bomberman.Server.Console
                     Log.WriteLine(Log.LogLevels.Debug, "Dust removed at {0},{1}", x, y);
                     AddExplosionModification(modifications, dust, MapModificationActions.Delete);
 
-                    // TODO: better randomization
-                    EntityTypes bonusType = EntityTypes.Empty;
+                    // Get random bonus
+                    EntityTypes bonusType = RangeRandom.Random(_bonusOccurancies);
+                    //// TODO: better randomization
+                    //EntityTypes bonusType = EntityTypes.Empty;
                     //int random = _random.Next(5);
                     //if (random == 1)
-                    //    bonusType = EntityTypes.BonusBombRange;
+                    //    bonusType = EntityTypes.BonusFireUp;
                     //else if (random == 2)
                     //    bonusType = EntityTypes.BonusNoClipping;
                     //else if (random == 3)
-                    //    bonusType = EntityTypes.BonusMaxBomb;
+                    //    bonusType = EntityTypes.BonusBombUp;
                     //else if (random == 4)
-                        bonusType = EntityTypes.BonusBombKick;
-                    // 0 -> no bonus
+                    //    bonusType = EntityTypes.BonusBombKick;
+                    //// 0 -> no bonus
 
                     if (bonusType != EntityTypes.Empty)
                     {
@@ -782,6 +840,40 @@ namespace Bomberman.Server.Console
                         tuple.Item2(tuple.Item1);
                     else
                         break;
+                }
+
+                bool signaled = _cancellationTokenSource.Token.WaitHandle.WaitOne(sleepTime);
+                if (signaled)
+                    break;
+            }
+        }
+
+        private void KeepAliveTask()
+        {
+            const int sleepTime = 100;
+            while(true)
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    break;
+
+                // Check player timeout + send heartbeat if needed
+                foreach (IPlayer p in _playerManager.Players)
+                {
+                    // Check player timeout
+                    TimeSpan timespan = DateTime.Now - p.LastActionFromClient;
+                    if (timespan.TotalMilliseconds > TimeoutDelay && IsTimeoutDetectionActive)
+                    {
+                        Log.WriteLine(Log.LogLevels.Info, "Timeout++ for player {0}", p.Name);
+                        // Update timeout count
+                        p.SetTimeout();
+                        if (p.TimeoutCount >= MaxTimeoutCountBeforeDisconnection)
+                            OnPlayerDisconnected(p);
+                    }
+
+                    // Send heartbeat if needed
+                    TimeSpan delayFromPreviousHeartbeat = DateTime.Now - p.LastActionToClient;
+                    if (delayFromPreviousHeartbeat.TotalMilliseconds > HeartbeatDelay)
+                        p.OnPing();
                 }
 
                 bool signaled = _cancellationTokenSource.Token.WaitHandle.WaitOne(sleepTime);

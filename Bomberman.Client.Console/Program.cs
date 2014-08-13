@@ -65,6 +65,8 @@ namespace Bomberman.Client.Console
                 else
                     System.Threading.Thread.Sleep(100);
             }
+
+            client.Stop();
         }
     }
 }

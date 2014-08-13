@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
@@ -9,8 +11,18 @@ namespace Bomberman.Client.Console
 {
     public class Client : IBombermanCallback
     {
+        private const int HeartbeatDelay = 300; // in ms
+        private const int TimeoutDelay = 500; // in ms
+        private const int MaxTimeoutCountBeforeDisconnection = 3;
+        private const bool IsTimeoutDetectionActive = false;
+
         private WCFProxy _proxy;
         private readonly ConsoleUI _consoleUI;
+        private DateTime _lastActionFromServer;
+        private int _timeoutCount;
+
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly Task _keepAliveTask;
 
         public List<MapDescription> MapDescriptions { get; private set; }
         public List<Opponent> Opponents { get; private set; }
@@ -30,6 +42,15 @@ namespace Bomberman.Client.Console
 
             IsConnected = false;
             IsPlaying = false;
+
+            _cancellationTokenSource = new CancellationTokenSource();
+            _keepAliveTask = Task.Factory.StartNew(KeepAliveTask, _cancellationTokenSource.Token);
+        }
+
+        public void Stop()
+        {
+            _cancellationTokenSource.Cancel();
+            _keepAliveTask.Wait(1000);
         }
 
         public void Connect(WCFProxy proxy, string name)
@@ -51,6 +72,7 @@ namespace Bomberman.Client.Console
             Name = name;
 
             _proxy = proxy;
+            _proxy.OnConnectionLost += OnConnectionLost;
             _proxy.Login(name);
         }
 
@@ -115,10 +137,46 @@ namespace Bomberman.Client.Console
                 Log.WriteLine(Log.LogLevels.Warning, "Cannot place bomb, not connected to server");
         }
 
+        private void OnConnectionLost()
+        {
+            Id = -1;
+            IsPlaying = false;
+
+            Disconnect();
+
+            _consoleUI.OnConnectionLost();
+        }
+
+        private void Disconnect()
+        {
+            Id = -1;
+            IsPlaying = false;
+
+            if (_proxy != null)
+            {
+                _proxy.OnConnectionLost -= OnConnectionLost;
+                _proxy.Disconnect();
+                _proxy = null;
+            }
+        }
+
+        private void ResetTimeout()
+        {
+            _timeoutCount = 0;
+            _lastActionFromServer = DateTime.Now;
+        }
+
+        private void SetTimeout()
+        {
+            _timeoutCount++;
+            _lastActionFromServer = DateTime.Now;
+        }
+
         #region IBombermanCallback
 
         public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnLogin: Id {0} Result: {1}", playerId, result);
             if (result == LoginResults.Successful)
             {
@@ -139,6 +197,7 @@ namespace Bomberman.Client.Console
 
         public void OnUserConnected(string username, int playerId)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnUserConnected: Player {0}|{1}", username, playerId);
 
             Opponents.Add(new Opponent
@@ -149,13 +208,24 @@ namespace Bomberman.Client.Console
             _consoleUI.OnUserConnected(username, playerId);
         }
 
-        public void OnUserDisconnected(int id)
+        public void OnUserDisconnected(int playerId)
         {
-            throw new NotImplementedException();
+            ResetTimeout();
+            Log.WriteLine(Log.LogLevels.Debug, "OnUserDisconnected: Player {0}", playerId);
+
+            Opponent opponent = Opponents.FirstOrDefault(x => x.Id == playerId);
+            if (opponent != null)
+            {
+                Opponents.Remove(opponent);
+                _consoleUI.OnUserDisconnected(opponent.Name, opponent.Id);
+            }
+            else
+                Log.WriteLine(Log.LogLevels.Warning, "Unknown disconnected player {0}", playerId);
         }
 
         public void OnGameStarted(int locationX, int locationY, Map map)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnGameStarted: start:{0},{1} map:{2}, {3}", locationX, locationY, map.Description.Id, map.Description.Title);
 
             // TODO
@@ -167,18 +237,16 @@ namespace Bomberman.Client.Console
             _consoleUI.OnGameStarted(map);
         }
 
-        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY, EntityTypes bonus)
+        public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            Log.WriteLine(Log.LogLevels.Debug, "OnMoved: {0}: {1},{2} -> {3},{4} | {5}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY, bonus);
+            ResetTimeout();
+            Log.WriteLine(Log.LogLevels.Debug, "OnMoved: {0}: {1},{2} -> {3},{4}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
             if (succeed)
             {
                 // Move ourself in map
                 GameMap.DeleteEntity(oldLocationX, oldLocationY, Entity);
                 GameMap.AddEntity(newLocationX, newLocationY, Entity);
-
-                // Delete bonus in map
-                GameMap.DeleteEntity(newLocationX, newLocationY, bonus);
 
                 //
                 _consoleUI.OnEntityMoved(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
@@ -191,6 +259,7 @@ namespace Bomberman.Client.Console
 
         public void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnBombPlaced: succeed {0} -> {1},{2}: {3}", result, locationX, locationY, bomb);
 
             if (result == PlaceBombResults.Successful)
@@ -203,13 +272,21 @@ namespace Bomberman.Client.Console
             }
         }
 
-        public void OnBonusPickedUp(EntityTypes bonus)
+        public void OnBonusPickedUp(EntityTypes bonus, int locationX, int locationY)
         {
-            throw new NotImplementedException();
+            ResetTimeout();
+            Log.WriteLine(Log.LogLevels.Debug, "OnBonusPickedUp: {0}", bonus);
+
+            // Delete bonus in map
+            GameMap.DeleteEntity(locationX, locationY, bonus);
+            // TODO: add bonus to bonus list + display bonus list
+
+            // TODO: add bonus to bonus list + display bonus list
         }
 
         public void OnChatReceived(int playerId, string msg)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnChatReceived: {0} {1}", playerId, msg);
 
             if (playerId == Id)
@@ -226,6 +303,7 @@ namespace Bomberman.Client.Console
 
         public void OnEntityAdded(EntityTypes entity, int locationX, int locationY)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityAdded: entity {0}: {1},{2}", entity, locationX, locationY);
 
             // Delete entity from map
@@ -237,6 +315,7 @@ namespace Bomberman.Client.Console
 
         public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityDeleted: entity {0}: {1},{2}", entity, locationX, locationY);
 
             // Delete entity from map
@@ -248,6 +327,7 @@ namespace Bomberman.Client.Console
 
         public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityMoved: entity {0}: {1},{2} -> {3},{4}", entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
             // Move entity in map
@@ -260,6 +340,7 @@ namespace Bomberman.Client.Console
 
         public void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityTransformed: {0},{1}: {2} -> {3}", locationX, locationY, oldEntity, newEntity);
 
             // Transform entity in map
@@ -272,6 +353,7 @@ namespace Bomberman.Client.Console
 
         public void OnEntitiesModified(List<MapModification> modifications)
         {
+            ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntitiesModified: count:{0}", modifications.Count);
 
             foreach(MapModification modification in modifications)
@@ -294,6 +376,9 @@ namespace Bomberman.Client.Console
 
         public void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY)
         {
+            ResetTimeout();
+            Log.WriteLine(Log.LogLevels.Debug, "OnKilled: {0} {1} : {2},{3}", playerId, playerEntity, locationX, locationY);
+
             Opponent player = Opponents.FirstOrDefault(x => x.Id == playerId);
             if (player != null)
             {
@@ -307,18 +392,27 @@ namespace Bomberman.Client.Console
 
         public void OnGameDraw()
         {
+            ResetTimeout();
+            Log.WriteLine(Log.LogLevels.Debug, "OnGameDraw");
+
             IsPlaying = false;
             _consoleUI.OnGameDraw();
         }
 
         public void OnGameLost()
         {
+            ResetTimeout();
+            Log.WriteLine(Log.LogLevels.Debug, "OnGameLost");
+
             IsPlaying = false;
             _consoleUI.OnGameLost();
         }
 
         public void OnGameWon(int playerId)
         {
+            Log.WriteLine(Log.LogLevels.Debug, "OnGameWon {0}", playerId);
+
+            ResetTimeout();
             IsPlaying = false;
             if (playerId == Id)
                 _consoleUI.OnGameWon(true, Name);
@@ -334,10 +428,42 @@ namespace Bomberman.Client.Console
 
         public void OnPing()
         {
-            // TODO: refresh timeout
-            throw new NotImplementedException();
+            ResetTimeout();
         }
 
         #endregion
+
+        private void KeepAliveTask()
+        {
+            const int sleepTime = 100;
+            while (true)
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    break;
+
+                // Check server timeout
+                TimeSpan timespan = DateTime.Now - _lastActionFromServer;
+                if (timespan.TotalMilliseconds > TimeoutDelay && IsTimeoutDetectionActive)
+                {
+                    Log.WriteLine(Log.LogLevels.Debug, "Timeout++");
+                    // Update timeout count
+                    SetTimeout();
+                    if (_timeoutCount >= MaxTimeoutCountBeforeDisconnection)
+                        OnConnectionLost(); // timeout
+                }
+
+                // Send heartbeat if needed
+                if (_proxy != null)
+                {
+                    TimeSpan delaySinceLastActionToServer = DateTime.Now - _proxy.LastActionToServer;
+                    if (delaySinceLastActionToServer.TotalMilliseconds > HeartbeatDelay)
+                        _proxy.Heartbeat();
+                }
+
+                bool signaled = _cancellationTokenSource.Token.WaitHandle.WaitOne(sleepTime);
+                if (signaled)
+                    break;
+            }
+        }
     }
 }

@@ -38,6 +38,7 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BonusOccurancy.cs" />
     <Compile Include="Entities\BombEntity.cs" />
     <Compile Include="Entities\BonusEntity.cs" />
     <Compile Include="Entities\Entity.cs" />

@@ -13,19 +13,19 @@ namespace Bomberman.Common.Contracts
         void OnUserConnected(string username, int playerId);
 
         [OperationContract(IsOneWay = true)]
-        void OnUserDisconnected(int id);
+        void OnUserDisconnected(int playerId);
 
         [OperationContract(IsOneWay = true)]
         void OnGameStarted(int locationX, int locationY, Map map);
 
         [OperationContract(IsOneWay = true)]
-        void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY, EntityTypes bonus);
+        void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
 
         [OperationContract(IsOneWay = true)]
         void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY);
 
         [OperationContract(IsOneWay = true)]
-        void OnBonusPickedUp(EntityTypes bonus);
+        void OnBonusPickedUp(EntityTypes bonus, int locationX, int locationY);
 
         [OperationContract(IsOneWay = true)]
         void OnChatReceived(int playerId, string msg);

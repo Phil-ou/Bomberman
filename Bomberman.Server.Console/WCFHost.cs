@@ -62,6 +62,8 @@ namespace Bomberman.Server.Console
         public event PlaceBombHandler OnPlaceBomb;
         public event ChatHandler OnChat;
 
+        public event DisconnectPlayerHandler OnPlayerDisconnected;
+
         #endregion
 
         #region IBomberman
@@ -94,12 +96,13 @@ namespace Bomberman.Server.Console
                 {
                     player = _createPlayerFunc(playerName, Callback);
                     //
+                    player.OnConnectionLost += PlayerOnConnectionLost;
                     id = _playerManager.Add(player);
                 }
             }
             if (id >= 0 && player != null && result == LoginResults.Successful)
             {
-                // TODO: refresh timeout
+                player.ResetTimeout(); // player is alive
                 if (OnLogin != null)
                     OnLogin(player, id);
             }
@@ -118,7 +121,7 @@ namespace Bomberman.Server.Console
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
-                // TODO: refresh timeout
+                player.ResetTimeout(); // player is alive
                 if (OnLogout != null)
                     OnLogout(player);
             }
@@ -133,7 +136,7 @@ namespace Bomberman.Server.Console
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
-                // TODO: refresh timeout
+                player.ResetTimeout(); // player is alive
                 if (OnStartGame != null)
                     OnStartGame(player, mapId);
             }
@@ -148,7 +151,7 @@ namespace Bomberman.Server.Console
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
-                // TODO: refresh timeout
+                player.ResetTimeout(); // player is alive
                 if (OnMove != null)
                     OnMove(player, direction);
             }
@@ -163,7 +166,7 @@ namespace Bomberman.Server.Console
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
-                // TODO: refresh timeout
+                player.ResetTimeout(); // player is alive
                 if (OnPlaceBomb != null)
                     OnPlaceBomb(player);
             }
@@ -178,7 +181,7 @@ namespace Bomberman.Server.Console
             IPlayer player = _playerManager[Callback];
             if (player != null)
             {
-                // TODO: refresh timeout
+                player.ResetTimeout(); // player is alive
                 if (OnChat != null)
                     OnChat(player, msg);
             }
@@ -188,10 +191,24 @@ namespace Bomberman.Server.Console
 
         public void Heartbeat()
         {
-            // TODO: refresh timeout
+            IPlayer player = _playerManager[Callback];
+            if (player != null)
+            {
+                player.ResetTimeout(); // player is alive
+            }
+            else
+            {
+                Log.WriteLine(Log.LogLevels.Warning, "Heartbeat from unknown player");
+            }
         }
 
         #endregion
+
+        private void PlayerOnConnectionLost(IPlayer player)
+        {
+            if (OnPlayerDisconnected != null)
+                OnPlayerDisconnected(player);
+        }
 
         private IBombermanCallback Callback
         {

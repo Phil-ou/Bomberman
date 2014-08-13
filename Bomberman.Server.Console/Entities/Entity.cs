@@ -55,13 +55,13 @@ namespace Bomberman.Server.Console.Entities
         {
             get
             {
-                return Type == EntityTypes.BonusBombRange
+                return Type == EntityTypes.BonusFireUp
                        || Type == EntityTypes.BonusNoClipping
-                       || Type == EntityTypes.BonusMaxBomb
+                       || Type == EntityTypes.BonusBombUp
                        || Type == EntityTypes.BonusBombKick
                        || Type == EntityTypes.BonusFlameBomb
-                       || Type == EntityTypes.BonusF
-                       || Type == EntityTypes.BonusG
+                       || Type == EntityTypes.BonusFireDown
+                       || Type == EntityTypes.BonusBombDown
                        || Type == EntityTypes.BonusH
                        || Type == EntityTypes.BonusI
                        || Type == EntityTypes.BonusJ;

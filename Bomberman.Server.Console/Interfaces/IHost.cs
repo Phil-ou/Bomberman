@@ -10,6 +10,8 @@ namespace Bomberman.Server.Console.Interfaces
     public delegate void PlaceBombHandler(IPlayer player);
     public delegate void ChatHandler(IPlayer player, string msg);
 
+    public delegate void DisconnectPlayerHandler(IPlayer player);
+
     public interface IHost : IBomberman
     {
         void Start();
@@ -21,5 +23,7 @@ namespace Bomberman.Server.Console.Interfaces
         event MoveHandler OnMove;
         event PlaceBombHandler OnPlaceBomb;
         event ChatHandler OnChat;
+
+        event DisconnectPlayerHandler OnPlayerDisconnected;
     }
 }

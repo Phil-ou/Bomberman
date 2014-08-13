@@ -1,7 +1,4 @@
-occurence bonus sheet: giving each bonus %age
 more bonus
-disconnection
-logout
 score
 GUI
 

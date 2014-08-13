@@ -27,19 +27,19 @@ namespace Bomberman.Common.DataContracts
         Player4 =           0x00000040,
 
         [EnumMember]
-        BonusBombRange =    0x00000400, // immediate action (can be picked more than once)
+        BonusFireUp =       0x00000400, // Increase bomb explosion range (max 10)
         [EnumMember]
-        BonusNoClipping =   0x00000800, // state (no additional effect if picked multiple times)
+        BonusNoClipping =   0x00000800, // No clipping, can pass thru every obstables
         [EnumMember]
-        BonusMaxBomb =      0x00001000, // immediate action (can be picked more than once)
+        BonusBombUp =       0x00001000, // Increase simultaneous bomb drop
         [EnumMember]
-        BonusBombKick =     0x00002000, // state (no additional effect if picked multiple times)
+        BonusBombKick =     0x00002000, // Can kick bomb
         [EnumMember]
-        BonusFlameBomb =    0x00004000, // state (no additional effect if picked multiple times)
+        BonusFlameBomb =    0x00004000, // Bomb leave flames during x seconds
         [EnumMember]
-        BonusF =            0x00008000,
+        BonusFireDown =     0x00008000, // Decrease bomb explision range (min 1)
         [EnumMember]
-        BonusG =            0x00010000,
+        BonusBombDown =     0x00010000, // Decrease simultaneous bomb drop (min 1)
         [EnumMember]
         BonusH =            0x00020000,
         [EnumMember]

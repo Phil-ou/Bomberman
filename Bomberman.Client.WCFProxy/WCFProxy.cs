@@ -6,6 +6,7 @@ using Bomberman.Client.Interfaces;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
+using Bomberman.Common.Helpers;
 
 namespace Bomberman.Client.WCFProxy
 {
@@ -43,8 +44,7 @@ namespace Bomberman.Client.WCFProxy
             catch (Exception ex)
             {
                 Log.WriteLine(Log.LogLevels.Error, "Exception:{0} {1}", actionName, ex);
-                if (OnConnectionLost != null)
-                    OnConnectionLost();
+                ConnectionLostHandler.Do(x => x());
                 Disconnect();
             }
         }
@@ -52,7 +52,7 @@ namespace Bomberman.Client.WCFProxy
         #region IProxy
 
         public DateTime LastActionToServer { get; private set; }
-        public event ProxyConnectionLostHandler OnConnectionLost;
+        public event ProxyConnectionLostDelegate ConnectionLostHandler;
 
         public bool Disconnect()
         {

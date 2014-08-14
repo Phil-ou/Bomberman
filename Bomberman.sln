@@ -42,6 +42,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bomberman.Server.Entities",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bomberman.Server.MapManager", "Bomberman.Server.MapManager\Bomberman.Server.MapManager.csproj", "{E3FE416D-13CB-4722-9115-20BC052C8468}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bomberman.Server", "Bomberman.Server\Bomberman.Server.csproj", "{7A204180-2CD4-42C4-ACAC-0018E2B771DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -92,6 +94,10 @@ Global
 		{E3FE416D-13CB-4722-9115-20BC052C8468}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3FE416D-13CB-4722-9115-20BC052C8468}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3FE416D-13CB-4722-9115-20BC052C8468}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A204180-2CD4-42C4-ACAC-0018E2B771DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A204180-2CD4-42C4-ACAC-0018E2B771DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A204180-2CD4-42C4-ACAC-0018E2B771DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A204180-2CD4-42C4-ACAC-0018E2B771DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,5 +118,6 @@ Global
 		{E3517B84-BF1A-469C-80E5-8A8B6C11946C} = {F844B716-3001-487C-A888-2E93541E2AE6}
 		{77A07F55-C731-413C-81AD-B0C54C66E620} = {F844B716-3001-487C-A888-2E93541E2AE6}
 		{E3FE416D-13CB-4722-9115-20BC052C8468} = {F844B716-3001-487C-A888-2E93541E2AE6}
+		{7A204180-2CD4-42C4-ACAC-0018E2B771DF} = {F844B716-3001-487C-A888-2E93541E2AE6}
 	EndGlobalSection
 EndGlobal

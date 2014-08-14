@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Console
@@ -15,13 +17,22 @@ namespace Bomberman.Client.Console
             System.Console.SetBufferSize(80, 30);
         }
 
-        public void OnLogin(int playerId, EntityTypes playerEntity, string maps)
+        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
         {
-            _playerId = playerId;
-            _playerEntity = playerEntity;
-
-            System.Console.SetCursorPosition(30, 20);
-            System.Console.Write("Login successful as {0}. Maps: {1}", playerId, maps);
+            if (result == LoginResults.Successful)
+            {
+                _playerId = playerId;
+                _playerEntity = playerEntity;
+                string mapsAsString = maps == null ? String.Empty : maps.Select(x => String.Format("[{0},{1},{2}]", x.Id, x.Title, x.Size)).Aggregate((s, s1) => s + s1);
+                System.Console.SetCursorPosition(30, 20);
+                System.Console.Write("Login successful as {0}. Maps: {1}", playerId, mapsAsString);
+            }
+            else
+            {
+                System.Console.SetCursorPosition(30, 20);
+                System.Console.ForegroundColor = ConsoleColor.Red;
+                System.Console.Write("Login failed: {0}", result);
+            }
         }
 
         public void OnUserConnected(string player, int playerId)
@@ -47,7 +58,13 @@ namespace Bomberman.Client.Console
                     DisplayEntity(x, y);
         }
 
-        public void OnChat(string player, string msg)
+        public void OnBonusPickedUp(EntityTypes bonus)
+        {
+            System.Console.SetCursorPosition(30, 10);
+            System.Console.Write("New bonus: {0}", bonus);
+        }
+
+        public void OnChatReceived(string player, string msg)
         {
             System.Console.SetCursorPosition(30, 0);
             System.Console.Write("{0}:{1}", player, msg);
@@ -103,7 +120,7 @@ namespace Bomberman.Client.Console
 
         public void OnConnectionLost()
         {
-            System.Console.SetCursorPosition(30, 10);
+            System.Console.SetCursorPosition(30, 4);
             System.Console.ForegroundColor = ConsoleColor.Red;
             System.Console.Write("Connection to server lost");
         }

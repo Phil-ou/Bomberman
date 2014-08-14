@@ -1,7 +1,7 @@
 ﻿using System;
 using Bomberman.Server.Interfaces;
 
-namespace Bomberman.Server.Console
+namespace Bomberman.Server
 {
     public class SortedLinkedList<TPriority, TData> : IPriorityQueue<TPriority, TData>
             where TPriority : IComparable, IComparable<TPriority>

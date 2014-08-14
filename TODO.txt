@@ -6,3 +6,4 @@ GUI
 Articles
 http://www.boyet.com/Articles/PriorityQueueCSharp3.html
 http://fr.wikipedia.org/wiki/Bomberman#Bonus_de_bombes
+http://stackoverflow.com/questions/2346065/proper-naming-convention-for-a-net-delegate-type

@@ -12,7 +12,7 @@ using Bomberman.Server.Interfaces;
 
 // TODO: remove bomb from died player?
 
-namespace Bomberman.Server.Console
+namespace Bomberman.Server
 {
     public enum ServerStates
     {
@@ -52,7 +52,6 @@ namespace Bomberman.Server.Console
         
         private readonly BlockingCollection<Action> _gameActionBlockingCollection = new BlockingCollection<Action>(new ConcurrentQueue<Action>());
         private readonly SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>> _timeoutActionQueue = new SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>>();
-        private readonly Random _random;
 
         public ServerStates State { get; private set; }
         public int PlayersInGameCount { get; private set; }
@@ -76,16 +75,14 @@ namespace Bomberman.Server.Console
             _entityMap = entityMap;
             _bonusOccurancies = bonusOccurancies;
 
-            _random = new Random();
+            _host.LoginHandler += OnLogin;
+            _host.LogoutHandler += OnLogout;
+            _host.StartGameHandler += OnStartGame;
+            _host.MoveHandler += OnMove;
+            _host.PlaceBombHandler += OnPlaceBomb;
+            _host.ChatHandler += OnChat;
 
-            _host.OnLogin += OnLogin;
-            _host.OnLogout += OnLogout;
-            _host.OnStartGame += OnStartGame;
-            _host.OnMove += OnMove;
-            _host.OnPlaceBomb += OnPlaceBomb;
-            _host.OnChat += OnChat;
-
-            _host.OnPlayerDisconnected += OnPlayerDisconnected;
+            _host.PlayerDisconnectedHandler += OnPlayerDisconnected;
 
             State = ServerStates.WaitStartGame;
         }

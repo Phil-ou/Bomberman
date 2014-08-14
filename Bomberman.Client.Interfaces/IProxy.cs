@@ -3,13 +3,13 @@ using Bomberman.Common.Contracts;
 
 namespace Bomberman.Client.Interfaces
 {
-    public delegate void ProxyConnectionLostHandler();
+    public delegate void ProxyConnectionLostDelegate();
 
     public interface IProxy : IBomberman
     {
         DateTime LastActionToServer { get; } // used to check if heartbeat is needed
 
-        event ProxyConnectionLostHandler OnConnectionLost;
+        event ProxyConnectionLostDelegate ConnectionLostHandler;
 
         bool Disconnect();
     }

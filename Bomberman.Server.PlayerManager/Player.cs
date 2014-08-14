@@ -5,6 +5,7 @@ using System.ServiceModel;
 using Bomberman.Common;
 using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
+using Bomberman.Common.Helpers;
 using Bomberman.Server.Interfaces;
 
 namespace Bomberman.Server.PlayerManager
@@ -29,14 +30,12 @@ namespace Bomberman.Server.PlayerManager
             }
             catch (CommunicationObjectAbortedException)
             {
-                if (OnConnectionLost != null)
-                    OnConnectionLost(this);
+                ConnectionLostHandler.Do(x => x(this));
             }
             catch (Exception ex)
             {
                 Log.WriteLine(Log.LogLevels.Error, "Exception:{0} {1}", actionName, ex);
-                if (OnConnectionLost != null)
-                    OnConnectionLost(this);
+                ConnectionLostHandler.Do(x => x(this));
             }
         }
 
@@ -58,7 +57,7 @@ namespace Bomberman.Server.PlayerManager
 
         public IBombermanCallback Callback { get; private set; }
 
-        public event ConnectionLostHandler OnConnectionLost;
+        public event ConnectionLostDelegate ConnectionLostHandler;
 
         // Heartbeat management
         public DateTime LastActionToClient { get; private set; } // used to check if heartbeat is needed

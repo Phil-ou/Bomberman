@@ -5,7 +5,7 @@ using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Console
 {
-    class Program
+    internal class Program
     {
         private static void Main(string[] args)
         {
@@ -14,7 +14,24 @@ namespace Bomberman.Client.Console
 
             ConsoleUI ui = new ConsoleUI();
 
-            Client client = new Client(ui);
+            Client client = new Client();
+
+            client.LoginHandler += ui.OnLogin;
+            client.UserConnectedHandler += ui.OnUserConnected;
+            client.UserDisconnectedHandler += ui.OnUserDisconnected;
+            client.GameStartedHandler += ui.OnGameStarted;
+            client.BonusPickedUpHandler += ui.OnBonusPickedUp;
+            client.ChatReceivedHandler += ui.OnChatReceived;
+            client.EntityAddedHandler += ui.OnEntityAdded;
+            client.EntityDeletedHandler += ui.OnEntityDeleted;
+            client.EntityMovedHandler += ui.OnEntityMoved;
+            client.EntityTransformedHandler += ui.OnEntityTransformed;
+            client.MultipleEntityModifiedHandler += ui.Redraw;
+            client.GameDrawHandler += ui.OnGameDraw;
+            client.GameLostHandler += ui.OnGameLost;
+            client.GameWonHandler += ui.OnGameWon;
+            client.KilledHandler += ui.OnKilled;
+            client.ConnectionLostHandler += ui.OnConnectionLost;
 
             string baseAddress = ConfigurationManager.AppSettings["address"];
             WCFProxy.WCFProxy proxy = new WCFProxy.WCFProxy(client, baseAddress);
@@ -33,7 +50,7 @@ namespace Bomberman.Client.Console
                             break;
                             // Connect
                         case ConsoleKey.C:
-                            client.Connect(proxy, name);
+                            client.Login(proxy, name);
                             break;
                             // Chat
                         case ConsoleKey.Z:

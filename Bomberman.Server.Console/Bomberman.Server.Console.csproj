@@ -35,14 +35,10 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BonusOccurancy.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server.cs" />
-    <Compile Include="SortedLinkedList.cs" />
     <Compile Include="TimerHelper.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -75,6 +71,10 @@
     <ProjectReference Include="..\Bomberman.Server.PlayerManager\Bomberman.Server.PlayerManager.csproj">
       <Project>{e3517b84-bf1a-469c-80e5-8a8b6c11946c}</Project>
       <Name>Bomberman.Server.PlayerManager</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bomberman.Server\Bomberman.Server.csproj">
+      <Project>{7a204180-2cd4-42c4-acac-0018e2b771df}</Project>
+      <Name>Bomberman.Server</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

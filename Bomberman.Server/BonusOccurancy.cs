@@ -1,7 +1,7 @@
 ﻿using Bomberman.Common.DataContracts;
 using Bomberman.Common.Randomizer;
 
-namespace Bomberman.Server.Console
+namespace Bomberman.Server
 {
     public class BonusOccurancy : IOccurancy<EntityTypes>
     {

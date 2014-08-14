@@ -3,27 +3,27 @@ using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Server.Interfaces
 {
-    public delegate void LoginHandler(IPlayer player, int playerId);
-    public delegate void LogoutHandler(IPlayer player);
-    public delegate void StartGameHandler(IPlayer player, int mapId);
-    public delegate void MoveHandler(IPlayer player, Directions direction);
-    public delegate void PlaceBombHandler(IPlayer player);
-    public delegate void ChatHandler(IPlayer player, string msg);
+    public delegate void LoginDelegate(IPlayer player, int playerId);
+    public delegate void LogoutDelegate(IPlayer player);
+    public delegate void StartGameDelegate(IPlayer player, int mapId);
+    public delegate void MoveDelegate(IPlayer player, Directions direction);
+    public delegate void PlaceBombDelegate(IPlayer player);
+    public delegate void ChatDelegate(IPlayer player, string msg);
 
-    public delegate void DisconnectPlayerHandler(IPlayer player);
+    public delegate void DisconnectPlayerDelegate(IPlayer player);
 
     public interface IHost : IBomberman
     {
         void Start();
         void Stop();
 
-        event LoginHandler OnLogin;
-        event LogoutHandler OnLogout;
-        event StartGameHandler OnStartGame;
-        event MoveHandler OnMove;
-        event PlaceBombHandler OnPlaceBomb;
-        event ChatHandler OnChat;
+        event LoginDelegate LoginHandler;
+        event LogoutDelegate LogoutHandler;
+        event StartGameDelegate StartGameHandler;
+        event MoveDelegate MoveHandler;
+        event PlaceBombDelegate PlaceBombHandler;
+        event ChatDelegate ChatHandler;
 
-        event DisconnectPlayerHandler OnPlayerDisconnected;
+        event DisconnectPlayerDelegate PlayerDisconnectedHandler;
     }
 }

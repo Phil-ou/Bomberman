@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="JetBrains.Annotations">
+      <HintPath>..\packages\JetBrains.Annotations.7.0\lib\net45\JetBrains.Annotations.dll</HintPath>
+    </Reference>
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.3.1.0.0\lib\net45\NLog.dll</HintPath>
     </Reference>
@@ -49,6 +52,7 @@
     <Compile Include="DataContracts\MapModification.cs" />
     <Compile Include="DataContracts\MapModificationActions.cs" />
     <Compile Include="DataContracts\PlaceBombResults.cs" />
+    <Compile Include="Helpers\MonadExtensions.cs" />
     <Compile Include="Helpers\SingleInstance.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

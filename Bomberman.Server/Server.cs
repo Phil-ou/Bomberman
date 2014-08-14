@@ -10,8 +10,6 @@ using Bomberman.Common.Randomizer;
 using Bomberman.Server.Entities;
 using Bomberman.Server.Interfaces;
 
-// TODO: remove bomb from died player?
-
 namespace Bomberman.Server
 {
     internal enum ServerStates
@@ -32,7 +30,7 @@ namespace Bomberman.Server
         private const int MaxBomb = 8; // Max simultaneous bomb for a player
         private const int MaxExplosionRange = 10; // Max bomb explosion range
         private const int BombTimer = 3000; // in ms
-        private const int FlameTimer = 500; // in ms
+        private const int FlameTimer = 2000; // in ms
         private const int BombMoveTimer = 500; // in ms
         private const int BonusTimer = 5000; // in ms
 

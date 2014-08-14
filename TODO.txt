@@ -1,6 +1,8 @@
 more bonus
 score
 GUI
+remove bomb from died player?
+new callback OnBombExploded(EntityTypes bomb, List<Tuple<int,int>> affectedCells) giving every cell affected by bomb explosion
 
 
 Articles

@@ -22,7 +22,7 @@ namespace Bomberman.Common.Contracts
         void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
 
         [OperationContract(IsOneWay = true)]
-        void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY);
+        void OnBombPlaced(PlaceBombResults result, EntityTypes bomb, int locationX, int locationY); // OnEntityAdded is not called on bomb dropper
 
         [OperationContract(IsOneWay = true)]
         void OnBonusPickedUp(EntityTypes bonus, int locationX, int locationY);
@@ -46,7 +46,7 @@ namespace Bomberman.Common.Contracts
         void OnEntitiesModified(List<MapModification> modifications);
 
         [OperationContract(IsOneWay = true)]
-        void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY);
+        void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY); // OnEntityRemoved is not called when a played dies
 
         [OperationContract(IsOneWay = true)]
         void OnGameDraw();

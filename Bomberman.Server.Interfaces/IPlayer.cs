@@ -14,7 +14,7 @@ namespace Bomberman.Server.Interfaces
         Dead        // -> Connected
     }
 
-    public delegate void ConnectionLostDelegate(IPlayer player);
+    public delegate void ConnectionLostEventHandler(IPlayer player);
 
     public interface IPlayer : IBombermanCallback
     {
@@ -34,7 +34,7 @@ namespace Bomberman.Server.Interfaces
 
         IBombermanCallback Callback { get; }
 
-        event ConnectionLostDelegate ConnectionLostHandler;
+        event ConnectionLostEventHandler ConnectionLost;
 
         // Heartbeat management
         DateTime LastActionToClient { get; } // used to check if heartbeat is needed

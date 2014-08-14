@@ -17,7 +17,7 @@ namespace Bomberman.Client.Console
             System.Console.SetBufferSize(80, 30);
         }
 
-        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
+        public void OnLoggedOn(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps, bool isGameStarted)
         {
             if (result == LoginResults.Successful)
             {
@@ -25,7 +25,7 @@ namespace Bomberman.Client.Console
                 _playerEntity = playerEntity;
                 string mapsAsString = maps == null ? String.Empty : maps.Select(x => String.Format("[{0},{1},{2}]", x.Id, x.Title, x.Size)).Aggregate((s, s1) => s + s1);
                 System.Console.SetCursorPosition(30, 20);
-                System.Console.Write("Login successful as {0}. Maps: {1}", playerId, mapsAsString);
+                System.Console.Write("Login successful as {0}. Maps: {1}. Started: {2}", playerId, mapsAsString, isGameStarted);
             }
             else
             {
@@ -125,7 +125,7 @@ namespace Bomberman.Client.Console
             System.Console.Write("Connection to server lost");
         }
 
-        public void Redraw()
+        public void OnRedraw()
         {
             for (int y = 0; y < _map.Description.Size; y++)
                 for (int x = 0; x < _map.Description.Size; x++)

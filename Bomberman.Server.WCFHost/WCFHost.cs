@@ -56,14 +56,14 @@ namespace Bomberman.Server.WCFHost
 
         #region IHost
 
-        public event LoginDelegate LoginHandler;
-        public event LogoutDelegate LogoutHandler;
-        public event StartGameDelegate StartGameHandler;
-        public event MoveDelegate MoveHandler;
-        public event PlaceBombDelegate PlaceBombHandler;
-        public event ChatDelegate ChatHandler;
+        public event LoginEventHandler HostLogin;
+        public event LogoutEventHandler HostLogout;
+        public event StartGameEventHandler HostStartGame;
+        public event MoveEventHandler HostMove;
+        public event PlaceBombEventHandler HostPlaceBomb;
+        public event ChatEventHandler HostChat;
 
-        public event DisconnectPlayerDelegate PlayerDisconnectedHandler;
+        public event DisconnectPlayerEventHandler PlayerDisconnected;
 
         #endregion
 
@@ -97,20 +97,20 @@ namespace Bomberman.Server.WCFHost
                 {
                     player = _createPlayerFunc(playerName, Callback);
                     //
-                    player.ConnectionLostHandler += PlayerOnConnectionLost;
+                    player.ConnectionLost += OnConnectionLost;
                     id = _playerManager.Add(player);
                 }
             }
             if (id >= 0 && player != null && result == LoginResults.Successful)
             {
                 player.ResetTimeout(); // player is alive
-                LoginHandler.Do(x => x(player, id));
+                HostLogin.Do(x => x(player, id));
             }
             else
             {
                 Log.WriteLine(Log.LogLevels.Info, "Register failed for player {0}", playerName);
                 //
-                Callback.OnLogin(result, -1, EntityTypes.Empty, null);
+                Callback.OnLogin(result, -1, EntityTypes.Empty, null, false);
             }
         }
 
@@ -122,7 +122,7 @@ namespace Bomberman.Server.WCFHost
             if (player != null)
             {
                 player.ResetTimeout(); // player is alive
-                LogoutHandler.Do(x => x(player));
+                HostLogout.Do(x => x(player));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Logout from unknown player");
@@ -136,7 +136,7 @@ namespace Bomberman.Server.WCFHost
             if (player != null)
             {
                 player.ResetTimeout(); // player is alive
-                StartGameHandler.Do(x => x(player, mapId));
+                HostStartGame.Do(x => x(player, mapId));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "StartGame from unknown player");
@@ -150,7 +150,7 @@ namespace Bomberman.Server.WCFHost
             if (player != null)
             {
                 player.ResetTimeout(); // player is alive
-                MoveHandler.Do(x => x(player, direction));
+                HostMove.Do(x => x(player, direction));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Move from unknown player");
@@ -164,7 +164,7 @@ namespace Bomberman.Server.WCFHost
             if (player != null)
             {
                 player.ResetTimeout(); // player is alive
-                PlaceBombHandler.Do(x => x(player));
+                HostPlaceBomb.Do(x => x(player));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "PlaceBomb from unknown player");
@@ -178,7 +178,7 @@ namespace Bomberman.Server.WCFHost
             if (player != null)
             {
                 player.ResetTimeout(); // player is alive
-                ChatHandler.Do(x => x(player, msg));
+                HostChat.Do(x => x(player, msg));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Chat from unknown player");
@@ -199,9 +199,9 @@ namespace Bomberman.Server.WCFHost
 
         #endregion
 
-        private void PlayerOnConnectionLost(IPlayer player)
+        private void OnConnectionLost(IPlayer player)
         {
-            PlayerDisconnectedHandler.Do(x => x(player));
+            PlayerDisconnected.Do(x => x(player));
         }
 
         private IBombermanCallback Callback

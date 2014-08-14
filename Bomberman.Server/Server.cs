@@ -14,7 +14,7 @@ using Bomberman.Server.Interfaces;
 
 namespace Bomberman.Server
 {
-    public enum ServerStates
+    internal enum ServerStates
     {
         WaitStartGame,
         GameStarted,
@@ -45,16 +45,15 @@ namespace Bomberman.Server
         private readonly IEntityMap _entityMap;
         private readonly List<BonusOccurancy> _bonusOccurancies;
 
+        private readonly BlockingCollection<Action> _gameActionBlockingCollection = new BlockingCollection<Action>(new ConcurrentQueue<Action>());
+        private readonly SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>> _timeoutActionQueue = new SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>>();
+
         private CancellationTokenSource _cancellationTokenSource;
         private Task _actionTask;
         private Task _timeoutActionTask;
         private Task _keepAliveTask;
-        
-        private readonly BlockingCollection<Action> _gameActionBlockingCollection = new BlockingCollection<Action>(new ConcurrentQueue<Action>());
-        private readonly SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>> _timeoutActionQueue = new SortedLinkedList<DateTime, Tuple<Entity, Action<Entity>>>();
-
-        public ServerStates State { get; private set; }
-        public int PlayersInGameCount { get; private set; }
+        private ServerStates _state;
+        private int _playersInGameCount;
 
         public Server(IHost host, IPlayerManager playerManager, IMapManager mapManager, IEntityMap entityMap, List<BonusOccurancy> bonusOccurancies)
         {
@@ -75,16 +74,16 @@ namespace Bomberman.Server
             _entityMap = entityMap;
             _bonusOccurancies = bonusOccurancies;
 
-            _host.LoginHandler += OnLogin;
-            _host.LogoutHandler += OnLogout;
-            _host.StartGameHandler += OnStartGame;
-            _host.MoveHandler += OnMove;
-            _host.PlaceBombHandler += OnPlaceBomb;
-            _host.ChatHandler += OnChat;
+            _host.HostLogin += OnHostLogin;
+            _host.HostLogout += OnHostLogout;
+            _host.HostStartGame += OnHostStartGame;
+            _host.HostMove += OnHostMove;
+            _host.HostPlaceBomb += OnHostPlaceBomb;
+            _host.HostChat += OnHostChat;
 
-            _host.PlayerDisconnectedHandler += OnPlayerDisconnected;
+            _host.PlayerDisconnected += OnPlayerDisconnected;
 
-            State = ServerStates.WaitStartGame;
+            _state = ServerStates.WaitStartGame;
         }
         
         public void Start()
@@ -106,7 +105,7 @@ namespace Bomberman.Server
         }
 
         // IHost handlers
-        private void OnLogin(IPlayer player, int playerId)
+        private void OnHostLogin(IPlayer player, int playerId)
         {
             Log.WriteLine(Log.LogLevels.Info, "New player {0}|{1} connected", player.Name, playerId);
 
@@ -129,7 +128,7 @@ namespace Bomberman.Server
             player.PlayerEntity = playerEntity;
 
             // Inform player about its playerId
-            player.OnLogin(LoginResults.Successful, playerId, playerEntity, _mapManager.MapDescriptions);
+            player.OnLogin(LoginResults.Successful, playerId, playerEntity, _mapManager.MapDescriptions, _state == ServerStates.GameStarted);
 
             // Inform player about other players
             foreach (IPlayer other in _playerManager.Players.Where(x => x != player))
@@ -141,32 +140,21 @@ namespace Bomberman.Server
             // Inform other players about new player
             foreach (IPlayer other in _playerManager.Players.Where(x => x != player))
                 other.OnUserConnected(player.Name, playerId);
-
-            // TODO: if game is started, handle differently
         }
 
-        private void OnLogout(IPlayer player)
+        private void OnHostLogout(IPlayer player)
         {
             Log.WriteLine(Log.LogLevels.Info, "Player {0} logs out", player.Name);
             RemovePlayerGracefully(player);
         }
 
-        private void OnStartGame(IPlayer player, int mapId)
+        private void OnHostStartGame(IPlayer player, int mapId)
         {
             Log.WriteLine(Log.LogLevels.Info, "Start game {0} map {1}", player.Name, mapId);
 
-            if (State == ServerStates.WaitStartGame)
+            if (_state == ServerStates.WaitStartGame)
             {
-                // Reset action list
-                while (_gameActionBlockingCollection.Count > 0)
-                {
-                    Action item;
-                    _gameActionBlockingCollection.TryTake(out item);
-                }
-
-                // Reset timeout action queue
-                lock(_timeoutActionQueue)
-                    _timeoutActionQueue.Clear();
+                ResetActionQueues();
 
                 // Generate cell map
                 Map map = _mapManager.Maps.FirstOrDefault(x => x.Description.Id == mapId);
@@ -243,13 +231,13 @@ namespace Bomberman.Server
                         }
 
                         //
-                        PlayersInGameCount = _playerManager.Players.Count(x => x.State == PlayerStates.Playing);
+                        _playersInGameCount = _playerManager.Players.Count(x => x.State == PlayerStates.Playing);
 
                         // Inform players about game started
                         foreach (IPlayer p in _playerManager.Players)
                             p.OnGameStarted(p.LocationX, p.LocationY, clonedMap);
 
-                        State = ServerStates.GameStarted;
+                        _state = ServerStates.GameStarted;
                     }
                     else
                         Log.WriteLine(Log.LogLevels.Error, "Game not started, players position not set");
@@ -261,23 +249,23 @@ namespace Bomberman.Server
                 Log.WriteLine(Log.LogLevels.Warning, "Game already started");
         }
 
-        private void OnMove(IPlayer player, Directions direction)
+        private void OnHostMove(IPlayer player, Directions direction)
         {
             Log.WriteLine(Log.LogLevels.Info, "Move {0}:{1}", player.Name, direction);
 
-            if (State == ServerStates.GameStarted && player.State == PlayerStates.Playing)
+            if (_state == ServerStates.GameStarted && player.State == PlayerStates.Playing)
                 EnqueueGameAction(() => MovePlayerAction(player, direction));
         }
 
-        private void OnPlaceBomb(IPlayer player)
+        private void OnHostPlaceBomb(IPlayer player)
         {
-            Log.WriteLine(Log.LogLevels.Info, "OnPlaceBomb {0}", player.Name);
+            Log.WriteLine(Log.LogLevels.Info, "OnHostPlaceBomb {0}", player.Name);
 
-            if (State == ServerStates.GameStarted && player.State == PlayerStates.Playing)
+            if (_state == ServerStates.GameStarted && player.State == PlayerStates.Playing)
                 EnqueueGameAction(() => PlaceBombAction(player));
         }
 
-        private void OnChat(IPlayer player, string msg)
+        private void OnHostChat(IPlayer player, string msg)
         {
             Log.WriteLine(Log.LogLevels.Info, "Chat from {0}:{1}", player.Name, msg);
 
@@ -294,6 +282,20 @@ namespace Bomberman.Server
         }
 
         //
+        private void ResetActionQueues()
+        {
+            // Reset action list
+            while (_gameActionBlockingCollection.Count > 0)
+            {
+                Action item;
+                _gameActionBlockingCollection.TryTake(out item);
+            }
+
+            // Reset timeout action queue
+            lock (_timeoutActionQueue)
+                _timeoutActionQueue.Clear();
+        }
+
         private void RemovePlayerGracefully(IPlayer player)
         {
             int id;
@@ -325,23 +327,25 @@ namespace Bomberman.Server
                 // Inform other player about player's death
                 int playerId = _playerManager.GetId(player);
                 IPlayer player1 = player;
-                foreach (IPlayer other in _playerManager.Players.Where(x => x != player1))
+                foreach (IPlayer other in _playerManager.Players.Where(p => p != player1))
                     other.OnKilled(playerId, player.PlayerEntity, player.LocationX, player.LocationY);
             }
 
             //  if no player playing -> draw
             //  if 1 player playing -> winner
-            int playingCount = _playerManager.Players.Count(x => x.State == PlayerStates.Playing);
+            int playingCount = _playerManager.Players.Count(p => p.State == PlayerStates.Playing);
             if (playingCount == 0)
             {
                 Log.WriteLine(Log.LogLevels.Info, "Game ended in a DRAW");
                 // Inform players about draw
                 foreach (IPlayer player in _playerManager.Players)
                     player.OnGameDraw();
+                //
+                ResetActionQueues();
                 // Change server state
-                State = ServerStates.WaitStartGame;
+                _state = ServerStates.WaitStartGame;
             }
-            else if (playingCount == 1 && PlayersInGameCount > 1) // Solo game doesn't stop when only one player left
+            else if (playingCount == 1 && _playersInGameCount > 1) // Solo game doesn't stop when only one player left
             {
                 IPlayer winner = _playerManager.Players.First(x => x.State == PlayerStates.Playing);
                 int id = _playerManager.GetId(winner);
@@ -350,18 +354,19 @@ namespace Bomberman.Server
                 // Inform players about winner
                 foreach (IPlayer player in _playerManager.Players)
                     player.OnGameWon(id);
+                //
+                ResetActionQueues();
                 // Change server state
-                State = ServerStates.WaitStartGame;
+                _state = ServerStates.WaitStartGame;
             }
 
             // Change dying to died
-            foreach (IPlayer p in _playerManager.Players)
-                if (p.State == PlayerStates.Dying)
-                {
-                    int id = _playerManager.GetId(p);
-                    Log.WriteLine(Log.LogLevels.Debug, "Kill definitively {0}|{1}", p.Name, id);
-                    p.State = PlayerStates.Dead;
-                }
+            foreach (IPlayer player in _playerManager.Players.Where(p => p.State == PlayerStates.Dying))
+            {
+                int id = _playerManager.GetId(player);
+                Log.WriteLine(Log.LogLevels.Debug, "Kill definitively {0}|{1}", player.Name, id);
+                player.State = PlayerStates.Dead;
+            }
         }
 
         // Actions

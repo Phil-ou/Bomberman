@@ -30,12 +30,12 @@ namespace Bomberman.Server.PlayerManager
             }
             catch (CommunicationObjectAbortedException)
             {
-                ConnectionLostHandler.Do(x => x(this));
+                ConnectionLost.Do(x => x(this));
             }
             catch (Exception ex)
             {
                 Log.WriteLine(Log.LogLevels.Error, "Exception:{0} {1}", actionName, ex);
-                ConnectionLostHandler.Do(x => x(this));
+                ConnectionLost.Do(x => x(this));
             }
         }
 
@@ -57,7 +57,7 @@ namespace Bomberman.Server.PlayerManager
 
         public IBombermanCallback Callback { get; private set; }
 
-        public event ConnectionLostDelegate ConnectionLostHandler;
+        public event ConnectionLostEventHandler ConnectionLost;
 
         // Heartbeat management
         public DateTime LastActionToClient { get; private set; } // used to check if heartbeat is needed
@@ -81,9 +81,9 @@ namespace Bomberman.Server.PlayerManager
 
         #region IBombermanCallback
 
-        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
+        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps, bool isGameStarted)
         {
-            ExceptionFreeAction(() => Callback.OnLogin(result, playerId, playerEntity, maps));
+            ExceptionFreeAction(() => Callback.OnLogin(result, playerId, playerEntity, maps, isGameStarted));
         }
 
         public void OnUserConnected(string username, int playerId)

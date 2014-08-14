@@ -11,7 +11,7 @@ using Bomberman.Common.Helpers;
 
 namespace Bomberman.Client
 {
-    public enum States
+    internal enum States
     {
         Created, // -> LoggingIn
         LoggingIn, // -> Logged
@@ -54,22 +54,22 @@ namespace Bomberman.Client
         public int LocationX { get; private set; }
         public int LocationY { get; private set; }
 
-        public event LoginDelegate LoginHandler;
-        public event UserConnectedDelegate UserConnectedHandler;
-        public event UserDisconnectedDelegate UserDisconnectedHandler;
-        public event GameStartedDelegate GameStartedHandler;
-        public event BonusPickedUpDelegate BonusPickedUpHandler;
-        public event ChatReceivedDelegate ChatReceivedHandler;
-        public event EntityAddedDelegate EntityAddedHandler;
-        public event EntityDeletedDelegate EntityDeletedHandler;
-        public event EntityMovedDelegate EntityMovedHandler;
-        public event EntityTransformedDelegate EntityTransformedHandler;
-        public event MultipleEntityModifiedDelegate MultipleEntityModifiedHandler;
-        public event GameDrawDelegate GameDrawHandler;
-        public event GameLostDelegate GameLostHandler;
-        public event GameWonDelegate GameWonHandler;
-        public event KilledDelegate KilledHandler;
-        public event ConnectionLostDelegate ConnectionLostHandler;
+        public event LoginEventHandler LoggedOn;
+        public event UserConnectedEventHandler UserConnected;
+        public event UserDisconnectedEventHandler UserDisconnected;
+        public event GameStartedEventHandler GameStarted;
+        public event BonusPickedUpEventHandler BonusPickedUp;
+        public event ChatReceivedEventHandler ChatReceived;
+        public event EntityAddedEventHandler EntityAdded;
+        public event EntityDeletedEventHandler EntityDeleted;
+        public event EntityMovedEventHandler EntityMoved;
+        public event EntityTransformedEventHandler EntityTransformed;
+        public event MultipleEntityModifiedEventHandler MultipleEntityModified;
+        public event GameDrawEventHandler GameDraw;
+        public event GameLostEventHandler GameLost;
+        public event GameWonEventHandler GameWon;
+        public event KilledEventHandler Killed;
+        public event ConnectionLostEventHandler ConnectionLost;
 
         public void Stop()
         {
@@ -98,7 +98,7 @@ namespace Bomberman.Client
             Name = name;
 
             _proxy = proxy;
-            _proxy.ConnectionLostHandler += OnConnectionLost;
+            _proxy.ConnectionLost += OnConnectionLost;
             _proxy.Login(name);
         }
 
@@ -172,10 +172,10 @@ namespace Bomberman.Client
 
         #region IBombermanCallback
 
-        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps)
+        public void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps, bool isGameStarted)
         {
             ResetTimeout();
-            Log.WriteLine(Log.LogLevels.Debug, "OnLogin: Id {0} Result: {1}", playerId, result);
+            Log.WriteLine(Log.LogLevels.Debug, "OnLogin: Id {0} Result: {1} Entity: {2} GameStarted: {3}", playerId, result, playerEntity, isGameStarted);
             if (result == LoginResults.Successful)
             {
                 _state = States.Logged;
@@ -190,7 +190,7 @@ namespace Bomberman.Client
                 Log.WriteLine(Log.LogLevels.Warning, "Cannot connect to server with name {0}: {1}", Name, result);
             }
 
-            LoginHandler.Do(x => x(result, playerId, playerEntity, maps));
+            LoggedOn.Do(x => x(result, playerId, playerEntity, maps, isGameStarted));
         }
 
         public void OnUserConnected(string username, int playerId)
@@ -204,7 +204,7 @@ namespace Bomberman.Client
                 Name = username,
             });
 
-            UserConnectedHandler.Do(x => x(username, playerId));
+            UserConnected.Do(x => x(username, playerId));
         }
 
         public void OnUserDisconnected(int playerId)
@@ -217,7 +217,7 @@ namespace Bomberman.Client
             {
                 Opponents.Remove(opponent);
 
-                UserDisconnectedHandler.Do(x => x(opponent.Name, opponent.Id));
+                UserDisconnected.Do(x => x(opponent.Name, opponent.Id));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Unknown disconnected player {0}", playerId);
@@ -226,14 +226,14 @@ namespace Bomberman.Client
         public void OnGameStarted(int locationX, int locationY, Map map)
         {
             ResetTimeout();
-            Log.WriteLine(Log.LogLevels.Debug, "OnGameStarted: start:{0},{1} map:{2}, {3}", locationX, locationY, map.Description.Id, map.Description.Title);
+            Log.WriteLine(Log.LogLevels.Debug, "OnGameStarted: start:{0},{1} map:{2}, {3} started:{4}", locationX, locationY, map.Description.Id, map.Description.Title);
 
             LocationX = locationX;
             LocationY = locationY;
             GameMap = map;
             _state = States.Playing;
 
-            GameStartedHandler.Do(x => x(map));
+            GameStarted.Do(x => x(map));
         }
 
         public void OnMoved(bool succeed, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
@@ -248,7 +248,7 @@ namespace Bomberman.Client
                 GameMap.AddEntity(newLocationX, newLocationY, Entity);
 
                 //
-                EntityMovedHandler.Do(x => x(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
+                EntityMoved.Do(x => x(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
 
                 // Set new location
                 LocationX = newLocationX;
@@ -267,7 +267,7 @@ namespace Bomberman.Client
                 GameMap.AddEntity(locationX, locationY, bomb);
 
                 //
-                EntityAddedHandler.Do(x => x(bomb, locationX, locationY));
+                EntityAdded.Do(x => x(bomb, locationX, locationY));
             }
         }
 
@@ -280,10 +280,10 @@ namespace Bomberman.Client
             GameMap.DeleteEntity(locationX, locationY, bonus);
 
             //
-            EntityDeletedHandler.Do(x => x(bonus, locationX, locationY));
+            EntityDeleted.Do(x => x(bonus, locationX, locationY));
 
             // TODO: add bonus to bonus list + display bonus list
-            BonusPickedUpHandler.Do(x => x(bonus));
+            BonusPickedUp.Do(x => x(bonus));
         }
 
         public void OnChatReceived(int playerId, string msg)
@@ -292,12 +292,12 @@ namespace Bomberman.Client
             Log.WriteLine(Log.LogLevels.Debug, "OnChatReceived: {0} {1}", playerId, msg);
 
             if (playerId == Id)
-                ChatReceivedHandler.Do(x => x(Name, msg));
+                ChatReceived.Do(x => x(Name, msg));
             else
             {
                 IOpponent opponent = Opponents.FirstOrDefault(x => x.Id == playerId);
                 if (opponent != null)
-                    ChatReceivedHandler.Do(x => x(opponent.Name, msg));
+                    ChatReceived.Do(x => x(opponent.Name, msg));
                 else
                     Log.WriteLine(Log.LogLevels.Warning, "Msg {0} received from unknown player {1}", msg, playerId);
             }
@@ -312,7 +312,7 @@ namespace Bomberman.Client
             GameMap.AddEntity(locationX, locationY, entity);
 
             //
-            EntityAddedHandler.Do(x => x(entity, locationX, locationY));
+            EntityAdded.Do(x => x(entity, locationX, locationY));
         }
 
         public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
@@ -324,7 +324,7 @@ namespace Bomberman.Client
             GameMap.DeleteEntity(locationX, locationY, entity);
 
             //
-            EntityDeletedHandler.Do(x => x(entity, locationX, locationY));
+            EntityDeleted.Do(x => x(entity, locationX, locationY));
         }
 
         public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
@@ -337,7 +337,7 @@ namespace Bomberman.Client
             GameMap.AddEntity(newLocationX, newLocationY, entity);
 
             //
-            EntityMovedHandler.Do(x => x(entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
+            EntityMoved.Do(x => x(entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
         }
 
         public void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
@@ -350,7 +350,7 @@ namespace Bomberman.Client
             GameMap.AddEntity(locationX, locationY, newEntity);
 
             //
-            EntityTransformedHandler.Do(x => x(oldEntity, newEntity, locationX, locationY));
+            EntityTransformed.Do(x => x(oldEntity, newEntity, locationX, locationY));
         }
 
         public void OnEntitiesModified(List<MapModification> modifications)
@@ -373,7 +373,7 @@ namespace Bomberman.Client
                 }
 
             //
-            MultipleEntityModifiedHandler.Do(x => x());
+            MultipleEntityModified.Do(x => x());
         }
 
         public void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY)
@@ -387,7 +387,7 @@ namespace Bomberman.Client
                 GameMap.DeleteEntity(locationX, locationY, playerEntity);
                 OnEntityDeleted(playerEntity, locationX, locationY);
 
-                KilledHandler.Do(x => x(player.Name));
+                Killed.Do(x => x(player.Name));
             }
             else
                 Log.WriteLine(Log.LogLevels.Warning, "Unknown player killed {0}", playerId);
@@ -399,7 +399,7 @@ namespace Bomberman.Client
             Log.WriteLine(Log.LogLevels.Debug, "OnGameDraw");
 
             _state = States.Logged;
-            GameDrawHandler.Do(x => x());
+            GameDraw.Do(x => x());
         }
 
         public void OnGameLost()
@@ -408,7 +408,7 @@ namespace Bomberman.Client
             Log.WriteLine(Log.LogLevels.Debug, "OnGameLost");
 
             _state = States.Logged;
-            GameLostHandler.Do(x => x());
+            GameLost.Do(x => x());
         }
 
         public void OnGameWon(int playerId)
@@ -418,12 +418,12 @@ namespace Bomberman.Client
             ResetTimeout();
             _state = States.Logged;
             if (playerId == Id)
-                GameWonHandler.Do(x => x(true, Name));
+                GameWon.Do(x => x(true, Name));
             else
             {
                 IOpponent player = Opponents.FirstOrDefault(x => x.Id == playerId);
                 if (player != null)
-                    GameWonHandler.Do(x => x(false, player.Name));
+                    GameWon.Do(x => x(false, player.Name));
                 else
                     Log.WriteLine(Log.LogLevels.Warning, "Game won by an unknown player {0}", playerId);
             }
@@ -443,7 +443,7 @@ namespace Bomberman.Client
 
             InternalDisconnect();
 
-            ConnectionLostHandler.Do(x => x());
+            ConnectionLost.Do(x => x());
         }
 
         private void InternalDisconnect()
@@ -453,7 +453,7 @@ namespace Bomberman.Client
 
             if (_proxy != null)
             {
-                _proxy.ConnectionLostHandler -= OnConnectionLost;
+                _proxy.ConnectionLost -= OnConnectionLost;
                 _proxy.Disconnect();
                 _proxy = null;
             }

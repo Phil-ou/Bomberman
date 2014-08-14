@@ -16,22 +16,22 @@ namespace Bomberman.Client.Console
 
             Client client = new Client();
 
-            client.LoginHandler += ui.OnLogin;
-            client.UserConnectedHandler += ui.OnUserConnected;
-            client.UserDisconnectedHandler += ui.OnUserDisconnected;
-            client.GameStartedHandler += ui.OnGameStarted;
-            client.BonusPickedUpHandler += ui.OnBonusPickedUp;
-            client.ChatReceivedHandler += ui.OnChatReceived;
-            client.EntityAddedHandler += ui.OnEntityAdded;
-            client.EntityDeletedHandler += ui.OnEntityDeleted;
-            client.EntityMovedHandler += ui.OnEntityMoved;
-            client.EntityTransformedHandler += ui.OnEntityTransformed;
-            client.MultipleEntityModifiedHandler += ui.Redraw;
-            client.GameDrawHandler += ui.OnGameDraw;
-            client.GameLostHandler += ui.OnGameLost;
-            client.GameWonHandler += ui.OnGameWon;
-            client.KilledHandler += ui.OnKilled;
-            client.ConnectionLostHandler += ui.OnConnectionLost;
+            client.LoggedOn += ui.OnLoggedOn;
+            client.UserConnected += ui.OnUserConnected;
+            client.UserDisconnected += ui.OnUserDisconnected;
+            client.GameStarted += ui.OnGameStarted;
+            client.BonusPickedUp += ui.OnBonusPickedUp;
+            client.ChatReceived += ui.OnChatReceived;
+            client.EntityAdded += ui.OnEntityAdded;
+            client.EntityDeleted += ui.OnEntityDeleted;
+            client.EntityMoved += ui.OnEntityMoved;
+            client.EntityTransformed += ui.OnEntityTransformed;
+            client.MultipleEntityModified += ui.OnRedraw;
+            client.GameDraw += ui.OnGameDraw;
+            client.GameLost += ui.OnGameLost;
+            client.GameWon += ui.OnGameWon;
+            client.Killed += ui.OnKilled;
+            client.ConnectionLost += ui.OnConnectionLost;
 
             string baseAddress = ConfigurationManager.AppSettings["address"];
             WCFProxy.WCFProxy proxy = new WCFProxy.WCFProxy(client, baseAddress);

@@ -44,7 +44,7 @@ namespace Bomberman.Client.WCFProxy
             catch (Exception ex)
             {
                 Log.WriteLine(Log.LogLevels.Error, "Exception:{0} {1}", actionName, ex);
-                ConnectionLostHandler.Do(x => x());
+                ConnectionLost.Do(x => x());
                 Disconnect();
             }
         }
@@ -52,7 +52,7 @@ namespace Bomberman.Client.WCFProxy
         #region IProxy
 
         public DateTime LastActionToServer { get; private set; }
-        public event ProxyConnectionLostDelegate ConnectionLostHandler;
+        public event ProxyConnectionLostEventHandler ConnectionLost;
 
         public bool Disconnect()
         {

@@ -7,7 +7,7 @@ namespace Bomberman.Common.Contracts
     public interface IBombermanCallback
     {
         [OperationContract(IsOneWay = true)]
-        void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps);
+        void OnLogin(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps, bool isGameStarted);
 
         [OperationContract(IsOneWay = true)]
         void OnUserConnected(string username, int playerId);

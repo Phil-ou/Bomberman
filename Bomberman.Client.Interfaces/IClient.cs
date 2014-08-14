@@ -3,22 +3,22 @@ using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Interfaces
 {
-    public delegate void LoginDelegate(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps);
-    public delegate void UserConnectedDelegate(string player, int playerId);
-    public delegate void UserDisconnectedDelegate(string player, int playerId);
-    public delegate void GameStartedDelegate(Map map);
-    public delegate void ChatReceivedDelegate(string player, string msg);
-    public delegate void BonusPickedUpDelegate(EntityTypes bonus);
-    public delegate void EntityAddedDelegate(EntityTypes entity, int locationX, int locationY);
-    public delegate void EntityDeletedDelegate(EntityTypes entity, int locationX, int locationY);
-    public delegate void EntityMovedDelegate(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
-    public delegate void EntityTransformedDelegate(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY);
-    public delegate void MultipleEntityModifiedDelegate();
-    public delegate void GameDrawDelegate();
-    public delegate void GameLostDelegate();
-    public delegate void GameWonDelegate(bool won, string name);
-    public delegate void KilledDelegate(string name);
-    public delegate void ConnectionLostDelegate();
+    public delegate void LoginEventHandler(LoginResults result, int playerId, EntityTypes playerEntity, List<MapDescription> maps, bool isGameStarted);
+    public delegate void UserConnectedEventHandler(string player, int playerId);
+    public delegate void UserDisconnectedEventHandler(string player, int playerId);
+    public delegate void GameStartedEventHandler(Map map);
+    public delegate void ChatReceivedEventHandler(string player, string msg);
+    public delegate void BonusPickedUpEventHandler(EntityTypes bonus);
+    public delegate void EntityAddedEventHandler(EntityTypes entity, int locationX, int locationY);
+    public delegate void EntityDeletedEventHandler(EntityTypes entity, int locationX, int locationY);
+    public delegate void EntityMovedEventHandler(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY);
+    public delegate void EntityTransformedEventHandler(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY);
+    public delegate void MultipleEntityModifiedEventHandler();
+    public delegate void GameDrawEventHandler();
+    public delegate void GameLostEventHandler();
+    public delegate void GameWonEventHandler(bool won, string name);
+    public delegate void KilledEventHandler(string name);
+    public delegate void ConnectionLostEventHandler();
 
     public interface IClient
     {
@@ -32,22 +32,22 @@ namespace Bomberman.Client.Interfaces
         int LocationX { get; }
         int LocationY { get; }
 
-        event LoginDelegate LoginHandler;
-        event UserConnectedDelegate UserConnectedHandler;
-        event UserDisconnectedDelegate UserDisconnectedHandler;
-        event GameStartedDelegate GameStartedHandler;
-        event BonusPickedUpDelegate BonusPickedUpHandler;
-        event ChatReceivedDelegate ChatReceivedHandler;
-        event EntityAddedDelegate EntityAddedHandler;
-        event EntityDeletedDelegate EntityDeletedHandler;
-        event EntityMovedDelegate EntityMovedHandler;
-        event EntityTransformedDelegate EntityTransformedHandler;
-        event MultipleEntityModifiedDelegate MultipleEntityModifiedHandler;
-        event GameDrawDelegate GameDrawHandler;
-        event GameLostDelegate GameLostHandler;
-        event GameWonDelegate GameWonHandler;
-        event KilledDelegate KilledHandler;
-        event ConnectionLostDelegate ConnectionLostHandler;
+        event LoginEventHandler LoggedOn;
+        event UserConnectedEventHandler UserConnected;
+        event UserDisconnectedEventHandler UserDisconnected;
+        event GameStartedEventHandler GameStarted;
+        event BonusPickedUpEventHandler BonusPickedUp;
+        event ChatReceivedEventHandler ChatReceived;
+        event EntityAddedEventHandler EntityAdded;
+        event EntityDeletedEventHandler EntityDeleted;
+        event EntityMovedEventHandler EntityMoved;
+        event EntityTransformedEventHandler EntityTransformed;
+        event MultipleEntityModifiedEventHandler MultipleEntityModified;
+        event GameDrawEventHandler GameDraw;
+        event GameLostEventHandler GameLost;
+        event GameWonEventHandler GameWon;
+        event KilledEventHandler Killed;
+        event ConnectionLostEventHandler ConnectionLost;
         
         void Stop();
 

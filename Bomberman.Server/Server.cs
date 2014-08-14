@@ -309,7 +309,8 @@ namespace Bomberman.Server
             }
 
             // Check winner or draw
-            CheckDeathsAndWinnerOrDraw();
+            if (_state == ServerStates.GameStarted)
+                CheckDeathsAndWinnerOrDraw();
 
             // Inform other players
             foreach (IPlayer p in _playerManager.Players.Where(x => x != player))

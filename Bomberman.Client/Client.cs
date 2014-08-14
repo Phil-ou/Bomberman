@@ -44,6 +44,16 @@ namespace Bomberman.Client
 
         #region IClient
 
+        public bool IsConnected
+        {
+            get { return _state == States.Logged || _state == States.Playing; }
+        }
+
+        public bool IsPlaying
+        {
+            get { return _state == States.Playing; }
+        }
+
         public List<MapDescription> MapDescriptions { get; private set; }
         public List<IOpponent> Opponents { get; private set; }
 
@@ -77,10 +87,10 @@ namespace Bomberman.Client
             _keepAliveTask.Wait(1000);
         }
 
-        public void Login(IProxy proxy, string name)
+        public void Login(Func<IBombermanCallback, IProxy> createProxyFunc, string name)
         {
-            if (proxy == null)
-                throw new ArgumentNullException("proxy");
+            if (createProxyFunc == null)
+                throw new ArgumentNullException("createProxyFunc");
             if (name == null)
                 throw new ArgumentNullException("name");
 
@@ -97,7 +107,7 @@ namespace Bomberman.Client
             Opponents = new List<IOpponent>();
             Name = name;
 
-            _proxy = proxy;
+            _proxy = createProxyFunc(this);
             _proxy.ConnectionLost += OnConnectionLost;
             _proxy.Login(name);
         }
@@ -292,12 +302,12 @@ namespace Bomberman.Client
             Log.WriteLine(Log.LogLevels.Debug, "OnChatReceived: {0} {1}", playerId, msg);
 
             if (playerId == Id)
-                ChatReceived.Do(x => x(Name, msg));
+                ChatReceived.Do(x => x(playerId, Name, msg));
             else
             {
                 IOpponent opponent = Opponents.FirstOrDefault(x => x.Id == playerId);
                 if (opponent != null)
-                    ChatReceived.Do(x => x(opponent.Name, msg));
+                    ChatReceived.Do(x => x(playerId, opponent.Name, msg));
                 else
                     Log.WriteLine(Log.LogLevels.Warning, "Msg {0} received from unknown player {1}", msg, playerId);
             }

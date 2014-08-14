@@ -1,0 +1,54 @@
+﻿<UserControl x:Class="Bomberman.Client.WPF.Views.WaitRoom.WaitRoom"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:waitRoomViewModels="clr-namespace:Bomberman.Client.WPF.ViewModels.WaitRoom"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance waitRoomViewModels:WaitRoomViewModelDesignData, IsDesignTimeCreatable=True}"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Chat -->
+        <ListBox Grid.Column="0"
+                 ItemsSource="{Binding Chats}"/>
+        
+        <!-- Player list, map list, start button -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <ListBox Grid.Row="0"
+                     ItemsSource="{Binding Players}"/>
+            
+            <ListBox Grid.Row="1"
+                     ItemsSource="{Binding Maps}"
+                     SelectedItem="{Binding SelectedMap}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" ToolTip="{Binding Description}">
+                            <TextBlock Text="{Binding Title}"/>
+                            <TextBlock Text="|"></TextBlock>
+                            <TextBlock Text="{Binding Size}"/>
+                            <TextBlock Text="x"></TextBlock>
+                            <TextBlock Text="{Binding Size}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            
+            <Button Grid.Row="2"
+                    IsEnabled="{Binding IsGameStopped}"
+                    Command="{Binding StartGameCommand}">
+                <TextBlock Text="Start game"/>
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

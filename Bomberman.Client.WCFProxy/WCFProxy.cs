@@ -65,7 +65,8 @@ namespace Bomberman.Client.WCFProxy
             catch (Exception ex)
             {
                 Log.WriteLine(Log.LogLevels.Warning, "Exception:{0}", ex);
-                _factory.Abort();
+                if (_factory != null)
+                    _factory.Abort();
             }
             _factory = null;
             return true;

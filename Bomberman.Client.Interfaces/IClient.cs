@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Bomberman.Common.Contracts;
 using Bomberman.Common.DataContracts;
 
 namespace Bomberman.Client.Interfaces
@@ -7,7 +9,7 @@ namespace Bomberman.Client.Interfaces
     public delegate void UserConnectedEventHandler(string player, int playerId);
     public delegate void UserDisconnectedEventHandler(string player, int playerId);
     public delegate void GameStartedEventHandler(Map map);
-    public delegate void ChatReceivedEventHandler(string player, string msg);
+    public delegate void ChatReceivedEventHandler(int playerId, string player, string msg);
     public delegate void BonusPickedUpEventHandler(EntityTypes bonus);
     public delegate void EntityAddedEventHandler(EntityTypes entity, int locationX, int locationY);
     public delegate void EntityDeletedEventHandler(EntityTypes entity, int locationX, int locationY);
@@ -25,6 +27,8 @@ namespace Bomberman.Client.Interfaces
         List<MapDescription> MapDescriptions { get; }
         List<IOpponent> Opponents { get; }
 
+        bool IsConnected { get; }
+        bool IsPlaying { get; }
         Map GameMap { get; }
         string Name { get; }
         int Id { get; }
@@ -51,7 +55,7 @@ namespace Bomberman.Client.Interfaces
         
         void Stop();
 
-        void Login(IProxy proxy, string name);
+        void Login(Func<IBombermanCallback, IProxy> createProxyFunc, string name);
         void Logout();
         void Chat(string msg);
         void StartGame(int mapId);

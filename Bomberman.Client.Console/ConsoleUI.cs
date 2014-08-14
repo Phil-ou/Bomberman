@@ -64,7 +64,7 @@ namespace Bomberman.Client.Console
             System.Console.Write("New bonus: {0}", bonus);
         }
 
-        public void OnChatReceived(string player, string msg)
+        public void OnChatReceived(int playerId, string player, string msg)
         {
             System.Console.SetCursorPosition(30, 0);
             System.Console.Write("{0}:{1}", player, msg);

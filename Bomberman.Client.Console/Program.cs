@@ -50,7 +50,7 @@ namespace Bomberman.Client.Console
                             break;
                             // Connect
                         case ConsoleKey.C:
-                            client.Login(proxy, name);
+                            client.Login(callback => proxy, name);
                             break;
                             // Chat
                         case ConsoleKey.Z:

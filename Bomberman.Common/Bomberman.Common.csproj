@@ -50,7 +50,7 @@
     <Compile Include="DataContracts\Map.cs" />
     <Compile Include="DataContracts\MapDescription.cs" />
     <Compile Include="DataContracts\MapModification.cs" />
-    <Compile Include="DataContracts\MapModificationActions.cs" />
+    <Compile Include="DataContracts\MapModificationOperations.cs" />
     <Compile Include="DataContracts\PlaceBombResults.cs" />
     <Compile Include="Helpers\MonadExtensions.cs" />
     <Compile Include="Helpers\SingleInstance.cs" />

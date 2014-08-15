@@ -14,6 +14,6 @@ namespace Bomberman.Common.DataContracts
         public EntityTypes Entity { get; set; }
 
         [DataMember]
-        public MapModificationActions Action { get; set; }
+        public MapModificationOperations Operation { get; set; }
     }
 }

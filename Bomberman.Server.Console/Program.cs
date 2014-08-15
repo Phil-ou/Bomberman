@@ -24,44 +24,57 @@ namespace Bomberman.Server.Console
 
             Log.Initialize(ConfigurationManager.AppSettings["logpath"], "bomberman_server.log");
             //
+            //List<BonusOccurancy> occurancies = new List<BonusOccurancy>
+            //{
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.Empty,
+            //        Occurancy = 10
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusFireUp,
+            //        Occurancy = 17
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusFireDown,
+            //        Occurancy = 17
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusBombUp,
+            //        Occurancy = 18
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusBombDown,
+            //        Occurancy = 18
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusBombKick,
+            //        Occurancy = 10
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusFlameBomb,
+            //        Occurancy = 7
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusNoClipping,
+            //        Occurancy = 3
+            //    },
+            //};
             List<BonusOccurancy> occurancies = new List<BonusOccurancy>
+            {
+                new BonusOccurancy
                 {
-                    new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusFireUp,
-                            Occurancy = 20
-                        },
-                        new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusFireDown,
-                            Occurancy = 20
-                        },
-                        new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusBombUp,
-                            Occurancy = 20
-                        },
-                        new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusBombDown,
-                            Occurancy = 20
-                        },
-                        new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusBombKick,
-                            Occurancy = 10
-                        },
-                        new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusFlameBomb,
-                            Occurancy = 7
-                        },
-                        new BonusOccurancy
-                        {
-                            Value = EntityTypes.BonusNoClipping,
-                            Occurancy = 3
-                        },
-                };
+                    Value = EntityTypes.BonusFireUp,
+                    Occurancy = 100
+                }
+            };
             //
             PlayerManager.PlayerManager playerManager = new PlayerManager.PlayerManager(4);
             //

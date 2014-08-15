@@ -369,16 +369,19 @@ namespace Bomberman.Client
             Log.WriteLine(Log.LogLevels.Debug, "OnEntitiesModified: count:{0}", modifications.Count);
 
             foreach (MapModification modification in modifications)
-                switch (modification.Action)
+                switch (modification.Operation)
                 {
-                    case MapModificationActions.Add:
+                    case MapModificationOperations.Add:
                         GameMap.AddEntity(modification.X, modification.Y, modification.Entity);
                         break;
-                    case MapModificationActions.Delete:
+                    case MapModificationOperations.Delete:
                         GameMap.DeleteEntity(modification.X, modification.Y, modification.Entity);
                         break;
+                    case MapModificationOperations.Explosion:
+                        // TODO: display an explosion
+                        break;
                     default:
-                        Log.WriteLine(Log.LogLevels.Error, "Invalid modification action: {0}", modification.Action);
+                        Log.WriteLine(Log.LogLevels.Error, "Invalid modification action: {0}", modification.Operation);
                         break;
                 }
 

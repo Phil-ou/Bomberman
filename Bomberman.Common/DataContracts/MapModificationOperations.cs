@@ -3,11 +3,13 @@
 namespace Bomberman.Common.DataContracts
 {
     [DataContract]
-    public enum MapModificationActions
+    public enum MapModificationOperations
     {
         [EnumMember]
         Add,
         [EnumMember]
         Delete,
+        [EnumMember]
+        Explosion, // a bomb explosion has affected cell
     }
 }

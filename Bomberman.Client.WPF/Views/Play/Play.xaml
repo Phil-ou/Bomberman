@@ -19,7 +19,7 @@
             <DataTemplate>
                 <Canvas x:Name="canva">
                     <Rectangle Width="{Binding Width}" Height="{Binding Height}" Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" Fill="{Binding Color}"/>
-                    <TextBlock Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" Text="{Binding Text}"/>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" Text="{Binding Text}"/>
                 </Canvas>
             </DataTemplate>
         </ItemsControl.ItemTemplate>

@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Bomberman.Common;
@@ -608,7 +609,8 @@ namespace Bomberman.Server
             if (cell.Entities.Any(e => e == bomb))
             {
                 bool addFlames = bomb.Player.Bonuses.Any(x => x == EntityTypes.BonusFlameBomb);
-                List<MapModification> modifications = GenerateExplosionModifications(bomb.X, bomb.Y, addFlames, bomb.Range);
+                List<MapModification> modifications = new List<MapModification>();
+                GenerateExplosionModifications(bomb.X, bomb.Y, addFlames, bomb.Range, modifications);
 
                 if (modifications.Any())
                 {
@@ -622,15 +624,18 @@ namespace Bomberman.Server
                 Log.WriteLine(Log.LogLevels.Debug, "ExplosionAction on inexistant bomb at {0},{1}", bomb.X, bomb.Y);
         }
 
-        private void AddExplosionModification(List<MapModification> list, IEntity entity, MapModificationActions action)
+        private void AddMapModification(List<MapModification> list, IEntity entity, MapModificationOperations operation)
         {
-            switch (action)
+            switch (operation)
             {
-                case MapModificationActions.Add:
+                case MapModificationOperations.Add:
                     _entityMap.AddEntity(entity); // Modification will notified to player later
                     break;
-                case MapModificationActions.Delete:
+                case MapModificationOperations.Delete:
                     _entityMap.RemoveEntity(entity); // Modification will notified to player later
+                    break;
+                case MapModificationOperations.Explosion:
+                    // NOP
                     break;
             }
             MapModification modification = new MapModification
@@ -638,18 +643,39 @@ namespace Bomberman.Server
                 X = entity.X,
                 Y = entity.Y,
                 Entity = entity.Type,
-                Action = action
+                Operation = operation
             };
             list.Add(modification);
         }
 
-        private List<MapModification> GenerateExplosionModifications(int x, int y, bool addFlames, int explosionRange)
+        private void AddExplosionModification(List<MapModification> list, int x, int y)
         {
-            List<MapModification> modifications = new List<MapModification>();
+            MapModification modification = new MapModification
+            {
+                X = x,
+                Y = y,
+                Entity = EntityTypes.Empty,
+                Operation = MapModificationOperations.Explosion
+            };
+            list.Add(modification);
+        }
 
+        private bool GenerateExplosionModifications(int x, int y, bool addFlames, int explosionRange, List<MapModification> modifications)
+        {
             Log.WriteLine(Log.LogLevels.Debug, "Explosion at {0}, {1}", x, y);
 
             IEntityCell cell = _entityMap.GetCell(x, y);
+
+            if (cell.Entities.Any(e => e.IsWall))
+            {
+                Log.WriteLine(Log.LogLevels.Debug, "Wall found at explosion location {0},{1} -> don't do anything", x, y);
+                return true;
+            }
+
+            bool obstacleFound = false;
+
+            // Cell is affected by explosion
+            AddExplosionModification(modifications, x, y);
 
             // Destroy dust and generate bonus
             if (cell.Entities.Any(e => e.IsDust))
@@ -658,7 +684,7 @@ namespace Bomberman.Server
                 if (dust != null)
                 {
                     Log.WriteLine(Log.LogLevels.Debug, "Dust removed at {0},{1}", x, y);
-                    AddExplosionModification(modifications, dust, MapModificationActions.Delete);
+                    AddMapModification(modifications, dust, MapModificationOperations.Delete);
 
                     // Get random bonus
                     EntityTypes bonusType = RangeRandom.Random(_bonusOccurancies);
@@ -679,10 +705,11 @@ namespace Bomberman.Server
                     {
                         // Add bonus
                         BonusEntity bonus = new BonusEntity(bonusType, x, y, TimeSpan.FromMilliseconds(BonusTimer));
-                        AddExplosionModification(modifications, bonus, MapModificationActions.Add);
+                        AddMapModification(modifications, bonus, MapModificationOperations.Add);
                         EnqueueTimeoutGameAction(bonus.FadeoutTimeout, bonus, e => FadeOutBonusAction(e as BonusEntity));
                     }
                 }
+                obstacleFound = true;
             }
 
             // Kill player
@@ -703,6 +730,7 @@ namespace Bomberman.Server
                     toRemove.Add(entity);
                 }
                 cell.Entities.RemoveAll(toRemove.Contains);
+                obstacleFound = true;
             }
 
             if (addFlames) // TODO: if flame already exists, update flame timeout
@@ -711,7 +739,7 @@ namespace Bomberman.Server
                 {
                     // Create flame
                     FlameEntity flame = new FlameEntity(x, y, TimeSpan.FromMilliseconds(FlameTimer));
-                    AddExplosionModification(modifications, flame, MapModificationActions.Add);
+                    AddMapModification(modifications, flame, MapModificationOperations.Add);
                     EnqueueTimeoutGameAction(flame.FadeoutTimeout, flame, e => FadeOutFlameAction(e as FlameEntity));
 
                     Log.WriteLine(Log.LogLevels.Debug, "Flame at {0},{1}", x, y);
@@ -730,7 +758,7 @@ namespace Bomberman.Server
 
                     // Remove bomb
                     Log.WriteLine(Log.LogLevels.Debug, "Remove bomb at {0},{1}", x, y);
-                    AddExplosionModification(modifications, bombEntity, MapModificationActions.Delete);
+                    AddMapModification(modifications, bombEntity, MapModificationOperations.Delete);
                     lock(_timeoutActionQueue)
                         _timeoutActionQueue.RemoveAll(e => e.Item1 == bombEntity);
 
@@ -748,7 +776,7 @@ namespace Bomberman.Server
                             int neighbourX = _entityMap.ComputeLocation(x, stepX);
                             int neighbourY = _entityMap.ComputeLocation(y, stepY);
 
-                            // Stop explosion propagation if wall found (TODO: should be stopped by any obstacle)
+                            // Stop explosion propagation if wall found
                             IEntityCell neighbourCell = _entityMap.GetCell(neighbourX, neighbourY);
                             if (neighbourCell.Entities.Any(e => e.IsWall))
                             {
@@ -758,14 +786,20 @@ namespace Bomberman.Server
 
                             Log.WriteLine(Log.LogLevels.Debug, "Propagating explosion to neighbourhood {0},{1} -> {2},{3}", x, y, neighbourX, neighbourY);
 
-                            List<MapModification> neighbourModifications = GenerateExplosionModifications(neighbourX, neighbourY, addFlames, range);
-                            modifications.AddRange(neighbourModifications);
+                            bool found = GenerateExplosionModifications(neighbourX, neighbourY, addFlames, range, modifications);
+                            // Stop explosion if any obstacle found
+                            if (found)
+                            {
+                                Log.WriteLine(Log.LogLevels.Debug, "Stop propagating explosion {0},{1} -> {2},{3} obstacle found while propagating", x, y, neighbourX, neighbourY);
+                                break;
+                            }
                         }
                     Log.WriteLine(Log.LogLevels.Debug, "Bomb completed at {0},{1}", x, y);
                 }
+                obstacleFound = true;
             }
 
-            return modifications;
+            return obstacleFound;
         }
 
         private void EnqueueGameAction(Action action)

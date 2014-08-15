@@ -1,7 +1,6 @@
 more bonus
 score
 GUI
-remove bomb from died player?
 new callback OnBombExploded(EntityTypes bomb, List<Tuple<int,int>> affectedCells) giving every cell affected by bomb explosion
 
 
@@ -9,3 +8,14 @@ Articles
 http://www.boyet.com/Articles/PriorityQueueCSharp3.html
 http://fr.wikipedia.org/wiki/Bomberman#Bonus_de_bombes
 http://stackoverflow.com/questions/2346065/proper-naming-convention-for-a-net-delegate-type
+
+
+
+
+
+bomb are dropped where player is
+bomb can be kicked (if bonus)
+bomb explosion is blocked by any obstacle
+	dust -> bonus
+	player -> dead
+	bomb -> chain explosion

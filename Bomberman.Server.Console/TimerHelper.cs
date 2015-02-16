@@ -35,12 +35,6 @@ namespace Bomberman.Server.Console
             }
         }
 
-        public void Dispose()
-        {
-            Stop();
-            TimerAction = null;
-        }
-
         void Timer_Elapsed(object state)
         {
             // Ensure that we don't have multiple timers active at the same time
@@ -65,5 +59,24 @@ namespace Bomberman.Server.Console
                 }
             }
         }
+
+
+        #region IDisposable
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Stop();
+                TimerAction = null;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        #endregion
     }
 }

@@ -194,6 +194,7 @@ namespace Bomberman.Client.WPF.ViewModels.Play
                 color = Colors.Yellow;
             if (IsWall(type))
                 color = Colors.Black;
+            color.A = 128;
             return new SolidColorBrush(color);
         }
 
@@ -218,9 +219,9 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         private int GetCellZIndex(EntityTypes type)
         {
             if (IsPlayer(type) || IsOpponent(type))
-                return 100;
-            if (IsBomb(type))
                 return 50;
+            if (IsBomb(type))
+                return 100;
             return 0;
         }
 

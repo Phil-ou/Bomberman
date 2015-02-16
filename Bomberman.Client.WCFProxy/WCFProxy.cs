@@ -10,7 +10,7 @@ using Bomberman.Common.Helpers;
 
 namespace Bomberman.Client.WCFProxy
 {
-    public class WCFProxy : IProxy
+    public class WCFProxy : IProxy, IDisposable
     {
         private DuplexChannelFactory<IBomberman> _factory;
         private readonly IBomberman _proxy;
@@ -110,6 +110,33 @@ namespace Bomberman.Client.WCFProxy
         }
 
         #endregion
+
+        #endregion
+
+        #region IDisposable
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_factory != null)
+                {
+                    try
+                    {
+                        _factory.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        _factory.Abort();
+                    }
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
 
         #endregion
     }

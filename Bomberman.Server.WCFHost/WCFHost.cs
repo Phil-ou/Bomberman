@@ -9,7 +9,7 @@ using Bomberman.Server.Interfaces;
 namespace Bomberman.Server.WCFHost
 {
     [ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Reentrant, InstanceContextMode = InstanceContextMode.Single)]
-    public class WCFHost : IHost
+    public class WCFHost : IHost, IDisposable
     {
         private ServiceHost _serviceHost;
 
@@ -217,5 +217,29 @@ namespace Bomberman.Server.WCFHost
                 return OperationContext.Current.GetCallbackChannel<IBombermanCallback>();
             }
         }
+
+        #region IDisposable
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                try
+                {
+                    _serviceHost.Close();
+                }
+                catch(Exception ex)
+                {
+                    _serviceHost.Abort();
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        #endregion
     }
 }

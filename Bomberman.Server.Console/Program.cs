@@ -67,11 +67,11 @@ namespace Bomberman.Server.Console
             //        Occurancy = 3
             //    },
             //};
-            List<BonusOccurancy> occurancies = new List<BonusOccurancy>
+            List<IOccurancy<EntityTypes>> occurancies = new List<IOccurancy<EntityTypes>>
             {
                 new BonusOccurancy
                 {
-                    Value = EntityTypes.BonusFireUp,
+                    Value = EntityTypes.BonusBombKick,
                     Occurancy = 100
                 }
             };

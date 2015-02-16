@@ -17,9 +17,19 @@
         </ItemsControl.ItemContainerStyle>
         <ItemsControl.ItemTemplate>
             <DataTemplate>
-                <Canvas x:Name="canva">
-                    <Rectangle Width="{Binding Width}" Height="{Binding Height}" Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" Fill="{Binding Color}"/>
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" Text="{Binding Text}"/>
+                <Canvas>
+                    <!--<Rectangle Width="{Binding Width}" Height="{Binding Height}" 
+                                Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" 
+                                Fill="{Binding Color}"/>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" 
+                               Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" 
+                               Text="{Binding Text}"/>-->
+                    <Border Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}"
+                            Width="{Binding Width}" Height="{Binding Height}" 
+                            Background="{Binding Color}">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                   Text="{Binding Text}"/>
+                    </Border>
                 </Canvas>
             </DataTemplate>
         </ItemsControl.ItemTemplate>

@@ -19,7 +19,7 @@ namespace Bomberman.Client
         Playing, // -> Logged
     }
 
-    public class Client : IBombermanCallback, IClient
+    public class Client : IBombermanCallback, IClient, IDisposable
     {
         private const int HeartbeatDelay = 300; // in ms
         private const int TimeoutDelay = 500; // in ms
@@ -133,7 +133,7 @@ namespace Bomberman.Client
 
             Log.WriteLine(Log.LogLevels.Debug, "Sending chat: {0}", msg);
 
-            if (_state != States.Logged || _state != States.Playing)
+            if (_state != States.Logged && _state != States.Playing)
             {
                 Log.WriteLine(Log.LogLevels.Warning, "Cannot send chat, not connected to server");
                 return;
@@ -517,5 +517,23 @@ namespace Bomberman.Client
                     break;
             }
         }
+
+        #region IDisposable
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_cancellationTokenSource != null)
+                    _cancellationTokenSource.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        #endregion
     }
 }

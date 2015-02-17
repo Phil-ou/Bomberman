@@ -72,8 +72,13 @@ namespace Bomberman.Server.Console
                 new BonusOccurancy
                 {
                     Value = EntityTypes.BonusBombKick,
-                    Occurancy = 100
-                }
+                    Occurancy = 50
+                },
+                new BonusOccurancy
+                {
+                    Value = EntityTypes.BonusFlameBomb,
+                    Occurancy = 50
+                },
             };
             //
             PlayerManager.PlayerManager playerManager = new PlayerManager.PlayerManager(4);

@@ -183,7 +183,7 @@ namespace Bomberman.Client.WPF.ViewModels.WaitRoom
                 AddPlayer(Client.Name);
                 Maps = maps;
                 if (Maps.Any())
-                    SelectedMap = Maps.FirstOrDefault(x => x.Title.ToLower().Contains("simple"));
+                    SelectedMap = Maps.FirstOrDefault(x => x.Title.ToLower().Contains("test")) ?? Maps.First();
                 line = "Logon successfull";
             }
             else

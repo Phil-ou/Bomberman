@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
 using System.Windows.Media;
 using Bomberman.Client.Interfaces;
 using Bomberman.Client.WPF.Helpers;
-using Bomberman.Client.WPF.MVVM;
 using Bomberman.Common.DataContracts;
 using Bomberman.Common.Helpers;
 
@@ -136,6 +132,9 @@ namespace Bomberman.Client.WPF.ViewModels.Play
             CellItem cell = Cells.FirstOrDefault(c => c.X == locationX && c.Y == locationY && c.Type == entity);
             if (cell != null)
                 ExecuteOnUIThread.Invoke(() => Cells.Remove(cell));
+            else
+            {
+            }
             // TODO: if removed is bomb -> explosion
         }
 

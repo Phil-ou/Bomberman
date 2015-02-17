@@ -34,9 +34,12 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BombKickBehaviours.cs" />
     <Compile Include="BonusOccurancy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
+    <Compile Include="ServerOptions.cs" />
+    <Compile Include="ServerStates.cs" />
     <Compile Include="SortedLinkedList.cs" />
   </ItemGroup>
   <ItemGroup>

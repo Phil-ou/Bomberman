@@ -251,18 +251,21 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnMoved: {0}: {1},{2} -> {3},{4}", succeed, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
-            if (succeed)
+            if (_state == States.Playing)
             {
-                // Move ourself in map
-                GameMap.DeleteEntity(oldLocationX, oldLocationY, Entity);
-                GameMap.AddEntity(newLocationX, newLocationY, Entity);
+                if (succeed)
+                {
+                    // Move ourself in map
+                    GameMap.DeleteEntity(oldLocationX, oldLocationY, Entity);
+                    GameMap.AddEntity(newLocationX, newLocationY, Entity);
 
-                //
-                EntityMoved.Do(x => x(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
+                    //
+                    EntityMoved.Do(x => x(Entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
 
-                // Set new location
-                LocationX = newLocationX;
-                LocationY = newLocationY;
+                    // Set new location
+                    LocationX = newLocationX;
+                    LocationY = newLocationY;
+                }
             }
         }
 
@@ -271,13 +274,16 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnBombPlaced: succeed {0} -> {1},{2}: {3}", result, locationX, locationY, bomb);
 
-            if (result == PlaceBombResults.Successful)
+            if (_state == States.Playing)
             {
-                // Add bomb to map
-                GameMap.AddEntity(locationX, locationY, bomb);
+                if (result == PlaceBombResults.Successful)
+                {
+                    // Add bomb to map
+                    GameMap.AddEntity(locationX, locationY, bomb);
 
-                //
-                EntityAdded.Do(x => x(bomb, locationX, locationY));
+                    //
+                    EntityAdded.Do(x => x(bomb, locationX, locationY));
+                }
             }
         }
 
@@ -286,14 +292,17 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnBonusPickedUp: {0}", bonus);
 
-            // Delete bonus in map
-            GameMap.DeleteEntity(locationX, locationY, bonus);
+            if (_state == States.Playing)
+            {
+                // Delete bonus in map
+                GameMap.DeleteEntity(locationX, locationY, bonus);
 
-            //
-            EntityDeleted.Do(x => x(bonus, locationX, locationY));
+                //
+                EntityDeleted.Do(x => x(bonus, locationX, locationY));
 
-            // TODO: add bonus to bonus list + display bonus list
-            BonusPickedUp.Do(x => x(bonus));
+                // TODO: add bonus to bonus list + display bonus list
+                BonusPickedUp.Do(x => x(bonus));
+            }
         }
 
         public void OnChatReceived(int playerId, string msg)
@@ -318,11 +327,14 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityAdded: entity {0}: {1},{2}", entity, locationX, locationY);
 
-            // Delete entity from map
-            GameMap.AddEntity(locationX, locationY, entity);
+            if (_state == States.Playing)
+            {
+                // Delete entity from map
+                GameMap.AddEntity(locationX, locationY, entity);
 
-            //
-            EntityAdded.Do(x => x(entity, locationX, locationY));
+                //
+                EntityAdded.Do(x => x(entity, locationX, locationY));
+            }
         }
 
         public void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
@@ -330,11 +342,14 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityDeleted: entity {0}: {1},{2}", entity, locationX, locationY);
 
-            // Delete entity from map
-            GameMap.DeleteEntity(locationX, locationY, entity);
+            if (_state == States.Playing)
+            {
+                // Delete entity from map
+                GameMap.DeleteEntity(locationX, locationY, entity);
 
-            //
-            EntityDeleted.Do(x => x(entity, locationX, locationY));
+                //
+                EntityDeleted.Do(x => x(entity, locationX, locationY));
+            }
         }
 
         public void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
@@ -342,12 +357,15 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityMoved: entity {0}: {1},{2} -> {3},{4}", entity, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
-            // Move entity in map
-            GameMap.DeleteEntity(oldLocationX, oldLocationY, entity);
-            GameMap.AddEntity(newLocationX, newLocationY, entity);
+            if (_state == States.Playing)
+            {
+                // Move entity in map
+                GameMap.DeleteEntity(oldLocationX, oldLocationY, entity);
+                GameMap.AddEntity(newLocationX, newLocationY, entity);
 
-            //
-            EntityMoved.Do(x => x(entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
+                //
+                EntityMoved.Do(x => x(entity, oldLocationX, oldLocationY, newLocationX, newLocationY));
+            }
         }
 
         public void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
@@ -355,12 +373,15 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntityTransformed: {0},{1}: {2} -> {3}", locationX, locationY, oldEntity, newEntity);
 
-            // Transform entity in map
-            GameMap.DeleteEntity(locationX, locationY, oldEntity);
-            GameMap.AddEntity(locationX, locationY, newEntity);
+            if (_state == States.Playing)
+            {
+                // Transform entity in map
+                GameMap.DeleteEntity(locationX, locationY, oldEntity);
+                GameMap.AddEntity(locationX, locationY, newEntity);
 
-            //
-            EntityTransformed.Do(x => x(oldEntity, newEntity, locationX, locationY));
+                //
+                EntityTransformed.Do(x => x(oldEntity, newEntity, locationX, locationY));
+            }
         }
 
         public void OnEntitiesModified(List<MapModification> modifications)
@@ -368,25 +389,28 @@ namespace Bomberman.Client
             ResetTimeout();
             Log.WriteLine(Log.LogLevels.Debug, "OnEntitiesModified: count:{0}", modifications.Count);
 
-            foreach (MapModification modification in modifications)
-                switch (modification.Operation)
-                {
-                    case MapModificationOperations.Add:
-                        GameMap.AddEntity(modification.X, modification.Y, modification.Entity);
-                        break;
-                    case MapModificationOperations.Delete:
-                        GameMap.DeleteEntity(modification.X, modification.Y, modification.Entity);
-                        break;
-                    case MapModificationOperations.Explosion:
-                        // TODO: display an explosion
-                        break;
-                    default:
-                        Log.WriteLine(Log.LogLevels.Error, "Invalid modification action: {0}", modification.Operation);
-                        break;
-                }
+            if (_state == States.Playing)
+            {
+                foreach (MapModification modification in modifications)
+                    switch (modification.Operation)
+                    {
+                        case MapModificationOperations.Add:
+                            GameMap.AddEntity(modification.X, modification.Y, modification.Entity);
+                            break;
+                        case MapModificationOperations.Delete:
+                            GameMap.DeleteEntity(modification.X, modification.Y, modification.Entity);
+                            break;
+                        case MapModificationOperations.Explosion:
+                            // TODO: display an explosion
+                            break;
+                        default:
+                            Log.WriteLine(Log.LogLevels.Error, "Invalid modification action: {0}", modification.Operation);
+                            break;
+                    }
 
-            //
-            MultipleEntityModified.Do(x => x());
+                //
+                MultipleEntityModified.Do(x => x());
+            }
         }
 
         public void OnKilled(int playerId, EntityTypes playerEntity, int locationX, int locationY)

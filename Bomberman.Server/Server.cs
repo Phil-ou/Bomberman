@@ -12,29 +12,8 @@ using Bomberman.Server.Interfaces;
 
 namespace Bomberman.Server
 {
-    internal enum ServerStates
-    {
-        WaitStartGame,
-        GameStarted,
-    }
-
     public class Server : IDisposable
     {
-        private const int HeartbeatDelay = 300; // in ms
-        private const int TimeoutDelay = 500; // in ms
-        private const int MaxTimeoutCountBeforeDisconnection = 3;
-        private const bool IsTimeoutDetectionActive = false;
-        private const bool MovePlayerActionKickBombOnAnyCellAllowed = false;
-
-        private const int MinBomb = 1; // Min simultaneous bomb for a player
-        private const int MinExplosionRange = 1; // Min bomb explosion range
-        private const int MaxBomb = 8; // Max simultaneous bomb for a player
-        private const int MaxExplosionRange = 10; // Max bomb explosion range
-        private const int BombTimer = 3000; // in ms
-        private const int FlameTimer = 2000; // in ms
-        private const int BombMoveTimer = 500; // in ms
-        private const int BonusTimer = 5000; // in ms
-
         private static readonly int[] BombNeighboursX = {-1, 1, 0, 0};
         private static readonly int[] BombNeighboursY = {0, 0, -1, 1};
 
@@ -224,9 +203,11 @@ namespace Bomberman.Server
                         {
                             p.State = PlayerStates.Playing;
                             p.BombCount = 0;
-                            p.MaxBombCount = MinBomb;
-                            p.BombRange = MinExplosionRange;
+                            p.MaxBombCount = ServerOptions.MinBomb;
+                            p.BombRange = ServerOptions.MinExplosionRange;
                             p.Bonuses = new List<EntityTypes>();
+
+                            p.Bonuses.Add(EntityTypes.BonusFlameBomb); // TODO: remove
                         }
 
                         //
@@ -331,19 +312,32 @@ namespace Bomberman.Server
                     other.OnKilled(playerId, player.PlayerEntity, player.LocationX, player.LocationY);
             }
 
-            //  if no player playing -> draw
+            //  if no player playing
+            //      if only one player in game -> lost
+            //      else -> draw
             //  if 1 player playing -> winner
             int playingCount = _playerManager.Players.Count(p => p.State == PlayerStates.Playing);
             if (playingCount == 0)
             {
-                Log.WriteLine(Log.LogLevels.Info, "Game ended in a DRAW");
-                // Inform players about draw
-                foreach (IPlayer player in _playerManager.Players)
-                    player.OnGameDraw();
-                //
-                ResetActionQueues();
-                // Change server state
-                _state = ServerStates.WaitStartGame;
+                if (_playersInGameCount > 1)
+                {
+                    Log.WriteLine(Log.LogLevels.Info, "Game ended in a DRAW");
+                    // Inform players about draw
+                    foreach (IPlayer player in _playerManager.Players)
+                        player.OnGameDraw();
+                    //
+                    ResetActionQueues();
+                    // Change server state
+                    _state = ServerStates.WaitStartGame;
+                }
+                else
+                {
+                    Log.WriteLine(Log.LogLevels.Info, "Solo game ended");
+                    //
+                    ResetActionQueues();
+                    // Change server state
+                    _state = ServerStates.WaitStartGame;
+                }
             }
             else if (playingCount == 1 && _playersInGameCount > 1) // Solo game doesn't stop when only one player left
             {
@@ -370,17 +364,8 @@ namespace Bomberman.Server
         }
 
         // Actions
-        private void MovePlayerAction(IPlayer player, Directions direction)
-        {
-            if (MovePlayerActionKickBombOnAnyCellAllowed)
-                // Players with bonus are allowed to kick bomb on any cell
-                MovePlayerActionKickBombOnAnyCell(player, direction);
-            else
-                // Players with bonus are allowed to kick bomb only on own cell
-                MovePlayerActionKickBombOnlyOnPlayerCell(player, direction);
-        }
 
-        private void MovePlayerActionKickBombOnAnyCell(IPlayer player, Directions direction)
+        private void MovePlayerAction(IPlayer player, Directions direction)
         {
             // Get old coordinates
             int oldLocationX = player.LocationX;
@@ -401,7 +386,8 @@ namespace Bomberman.Server
             IEntityCell colliderCell = _entityMap.GetCell(newLocationX, newLocationY);
 
             //
-            if (player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && currentCell.Entities.Any(e => e.IsBomb)) // Can kick bomb if bonus
+            if ((ServerOptions.BombKickBehaviour == BombKickBehaviours.OnAnyCell || ServerOptions.BombKickBehaviour == BombKickBehaviours.OnPlayerCellOnly)
+                && player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && currentCell.Entities.Any(e => e.IsBomb) && colliderCell.Entities.All(e => e.IsEmpty || e.IsBonus)) // Can kick bomb if bonus
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Push bomb at {0},{1}", newLocationX, newLocationY);
 
@@ -411,7 +397,7 @@ namespace Bomberman.Server
                     if (!bomb.IsMoving)
                     {
                         // Init move
-                        bomb.InitMove(direction, TimeSpan.FromMilliseconds(BombMoveTimer));
+                        bomb.InitMove(direction, TimeSpan.FromMilliseconds(ServerOptions.BombMoveTimer));
                         // Perform move action immediately
                         MoveBombAction(bomb);
                     }
@@ -428,19 +414,19 @@ namespace Bomberman.Server
                 // Get bonus if any
                 EntityTypes bonusEntity = EntityTypes.Empty;
                 BonusEntity bonus = colliderCell.Entities.FirstOrDefault(x => x.IsBonus) as BonusEntity;
-                if (bonus != null) // Don't add twice the same bonus
+                if (bonus != null)
                 {
                     bonusEntity = bonus.Type;
 
                     if (bonusEntity == EntityTypes.BonusBombUp)
-                        player.MaxBombCount = Math.Min(player.MaxBombCount + 1, MaxBomb);
+                        player.MaxBombCount = Math.Min(player.MaxBombCount + 1, ServerOptions.MaxBomb);
                     else if (bonusEntity == EntityTypes.BonusBombDown)
-                        player.MaxBombCount = Math.Max(player.MaxBombCount - 1, MinBomb);
+                        player.MaxBombCount = Math.Max(player.MaxBombCount - 1, ServerOptions.MinBomb);
                     else if (bonusEntity == EntityTypes.BonusFireUp)
-                        player.BombRange = Math.Min(player.BombRange + 1, MaxExplosionRange);
+                        player.BombRange = Math.Min(player.BombRange + 1, ServerOptions.MaxExplosionRange);
                     else if (bonusEntity == EntityTypes.BonusFireDown)
-                        player.BombRange = Math.Max(player.BombRange - 1, MinExplosionRange);
-                    else
+                        player.BombRange = Math.Max(player.BombRange - 1, ServerOptions.MinExplosionRange);
+                    else // TODO: Don't add twice the same bonus
                         player.Bonuses.Add(bonusEntity); // state bonus
 
                     Log.WriteLine(Log.LogLevels.Info, "Player {0} picked up bonus {1}", player.Name, bonusEntity);
@@ -453,9 +439,14 @@ namespace Bomberman.Server
                 // Inform player about its new location
                 player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY);
 
-                // Inform player about bonus picked up if any
+                // Remove bonus from map and inform player about bonus picked up if any
                 if (bonusEntity != EntityTypes.Empty)
+                {
+                    _entityMap.RemoveEntity(bonus);
+                    lock (_timeoutActionQueue)
+                        _timeoutActionQueue.RemoveAll(e => e.Item1 == bonus);
                     player.OnBonusPickedUp(bonusEntity, newLocationX, newLocationY);
+                }
 
                 // Move player on map
                 _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
@@ -467,7 +458,8 @@ namespace Bomberman.Server
                     p.OnEntityDeleted(bonusEntity, newLocationX, newLocationY);
                 }
             }
-            else if (player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && colliderCell.Entities.Any(e => e.IsBomb)) // Can kick bomb if bonus gained
+            else if ((ServerOptions.BombKickBehaviour == BombKickBehaviours.OnAnyCell || ServerOptions.BombKickBehaviour == BombKickBehaviours.OnDestinationCellOnly)
+                && player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && colliderCell.Entities.Any(e => e.IsBomb)) // Can kick bomb if bonus gained
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Push bomb at {0},{1}", newLocationX, newLocationY);
 
@@ -477,7 +469,7 @@ namespace Bomberman.Server
                     if (!bomb.IsMoving)
                     {
                         // Init move
-                        bomb.InitMove(direction, TimeSpan.FromMilliseconds(BombMoveTimer));
+                        bomb.InitMove(direction, TimeSpan.FromMilliseconds(ServerOptions.BombMoveTimer));
                         // Perform move action immediately
                         MoveBombAction(bomb);
                     }
@@ -487,145 +479,6 @@ namespace Bomberman.Server
                 else
                     Log.WriteLine(Log.LogLevels.Error, "Pushed bomb doesn't exist anymore at this location {0},{1}", newLocationX, newLocationY);
             }
-            else if (colliderCell.Entities.Any(e => e.IsFlames)) // dead
-            {
-                Log.WriteLine(Log.LogLevels.Debug, "Moved successfully from {0},{1} to {2},{3} but died because of Flames", oldLocationX, oldLocationY, newLocationX, newLocationY);
-
-                // Kill player
-                player.State = PlayerStates.Dying;
-
-                // Set new location
-                player.LocationX = newLocationX;
-                player.LocationY = newLocationY;
-
-                // Inform player about its new location
-                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY);
-
-                // Move player on map
-                _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
-
-                // Inform other players about player move
-                foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
-                    p.OnEntityMoved(player.PlayerEntity, oldLocationX, oldLocationY, newLocationX, newLocationY);
-
-                // Check deaths, winner or draw
-                CheckDeathsAndWinnerOrDraw();
-            }
-            else
-            {
-                string collider = colliderCell.Entities.Select(x => x.Type.ToString()).Aggregate((s, s1) => s + s1);
-                Log.WriteLine(Log.LogLevels.Debug, "Moved from {0},{1} to {2},{3} failed because of collider {4}", oldLocationX, oldLocationY, newLocationX, newLocationY, collider);
-                player.OnMoved(false, -1, -1, -1, -1);
-            }
-        }
-
-        private void MovePlayerActionKickBombOnlyOnPlayerCell(IPlayer player, Directions direction)
-        {
-            // Get old coordinates
-            int oldLocationX = player.LocationX;
-            int oldLocationY = player.LocationY;
-
-            // Get current location cell
-            IEntityCell currentCell = _entityMap.GetCell(oldLocationX, oldLocationY);
-
-            // Search player in cell map
-            //IEntity playerEntity = _entityMap.GetEntity(player.PlayerEntity, oldLocationX, oldLocationY);
-            IEntity playerEntity = currentCell.Entities.FirstOrDefault(x => x.Type == player.PlayerEntity);
-
-            // Get new coordinates
-            int newLocationX, newLocationY;
-            _entityMap.ComputeNewCoordinates(playerEntity, direction, out newLocationX, out newLocationY);
-
-            // Get collider on new location
-            IEntityCell colliderCell = _entityMap.GetCell(newLocationX, newLocationY);
-
-            //
-            if (player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && currentCell.Entities.Any(e => e.IsBomb)) // Can kick bomb if bonus
-            {
-                Log.WriteLine(Log.LogLevels.Debug, "Push bomb at {0},{1}", newLocationX, newLocationY);
-
-                BombEntity bomb = currentCell.GetEntity(EntityTypes.Bomb) as BombEntity;
-                if (bomb != null)
-                {
-                    if (!bomb.IsMoving)
-                    {
-                        // Init move
-                        bomb.InitMove(direction, TimeSpan.FromMilliseconds(BombMoveTimer));
-                        // Perform move action immediately
-                        MoveBombAction(bomb);
-                    }
-                    else
-                        Log.WriteLine(Log.LogLevels.Debug, "Cannot push bomb because its already moving");
-                }
-                else
-                    Log.WriteLine(Log.LogLevels.Error, "Pushed bomb doesn't exist anymore at this location {0},{1}", newLocationX, newLocationY);
-            }
-            else if (player.Bonuses.Any(b => b == EntityTypes.BonusNoClipping) || colliderCell.Entities.All(e => e.IsEmpty || e.IsBonus)) // can only move to empty location or bonus, or everywhere if no-clip bonus
-            {
-                Log.WriteLine(Log.LogLevels.Debug, "Moved successfully from {0},{1} to {2},{3}", oldLocationX, oldLocationY, newLocationX, newLocationY);
-
-                // Get bonus if any
-                EntityTypes bonusEntity = EntityTypes.Empty;
-                BonusEntity bonus = colliderCell.Entities.FirstOrDefault(x => x.IsBonus) as BonusEntity;
-                if (bonus != null) // Don't add twice the same bonus
-                {
-                    bonusEntity = bonus.Type;
-
-                    if (bonusEntity == EntityTypes.BonusBombUp)
-                        player.MaxBombCount = Math.Min(player.MaxBombCount + 1, MaxBomb);
-                    else if (bonusEntity == EntityTypes.BonusBombDown)
-                        player.MaxBombCount = Math.Max(player.MaxBombCount - 1, MinBomb);
-                    else if (bonusEntity == EntityTypes.BonusFireUp)
-                        player.BombRange = Math.Min(player.BombRange + 1, MaxExplosionRange);
-                    else if (bonusEntity == EntityTypes.BonusFireDown)
-                        player.BombRange = Math.Max(player.BombRange - 1, MinExplosionRange);
-                    else
-                        player.Bonuses.Add(bonusEntity); // state bonus
-
-                    Log.WriteLine(Log.LogLevels.Info, "Player {0} picked up bonus {1}", player.Name, bonusEntity);
-                }
-
-                // Set new location
-                player.LocationX = newLocationX;
-                player.LocationY = newLocationY;
-
-                // Inform player about its new location
-                player.OnMoved(true, oldLocationX, oldLocationY, newLocationX, newLocationY);
-
-                // Inform player about bonus picked up if any
-                if (bonusEntity != EntityTypes.Empty)
-                    player.OnBonusPickedUp(bonusEntity, newLocationX, newLocationY);
-
-                // Move player on map
-                _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
-
-                // Inform other players about player move and bonus
-                foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
-                {
-                    p.OnEntityMoved(player.PlayerEntity, oldLocationX, oldLocationY, newLocationX, newLocationY);
-                    p.OnEntityDeleted(bonusEntity, newLocationX, newLocationY);
-                }
-            }
-            //else if (player.Bonuses.Any(b => b == EntityTypes.BonusBombKick) && colliderCell.Entities.Any(e => e.IsBomb)) // Can kick bomb if bonus gained
-            //{
-            //    Log.WriteLine(Log.LogLevels.Debug, "Push bomb at {0},{1}", newLocationX, newLocationY);
-
-            //    BombEntity bomb = colliderCell.GetEntity(EntityTypes.Bomb) as BombEntity;
-            //    if (bomb != null)
-            //    {
-            //        if (!bomb.IsMoving)
-            //        {
-            //            // Init move
-            //            bomb.InitMove(direction, TimeSpan.FromMilliseconds(BombMoveTimer));
-            //            // Perform move action immediately
-            //            MoveBombAction(bomb);
-            //        }
-            //        else
-            //            Log.WriteLine(Log.LogLevels.Debug, "Cannot push bomb because its already moving");
-            //    }
-            //    else
-            //        Log.WriteLine(Log.LogLevels.Error, "Pushed bomb doesn't exist anymore at this location {0},{1}", newLocationX, newLocationY);
-            //}
             else if (colliderCell.Entities.Any(e => e.IsFlames)) // dead
             {
                 Log.WriteLine(Log.LogLevels.Debug, "Moved successfully from {0},{1} to {2},{3} but died because of Flames", oldLocationX, oldLocationY, newLocationX, newLocationY);
@@ -675,7 +528,7 @@ namespace Bomberman.Server
                 int bombExplosionRange = player.BombRange;
 
                 // Create bomb
-                BombEntity bomb = new BombEntity(player, bombLocationX, bombLocationY, bombExplosionRange, TimeSpan.FromMilliseconds(BombTimer));
+                BombEntity bomb = new BombEntity(player, bombLocationX, bombLocationY, bombExplosionRange, TimeSpan.FromMilliseconds(ServerOptions.BombTimer));
 
                 // Increase bomb count
                 player.BombCount++;
@@ -685,7 +538,7 @@ namespace Bomberman.Server
 
                 // Add bomb to map
                 _entityMap.AddEntity(bomb);
-                EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(BombTimer), bomb, e => ExplosionAction(e as BombEntity));
+                EnqueueTimeoutGameAction(DateTime.Now.AddMilliseconds(ServerOptions.BombTimer), bomb, e => ExplosionAction(e as BombEntity));
 
                 // Inform other players about bomb placement
                 foreach (IPlayer p in _playerManager.Players.Where(x => x != player))
@@ -878,7 +731,7 @@ namespace Bomberman.Server
                     if (bonusType != EntityTypes.Empty)
                     {
                         // Add bonus
-                        BonusEntity bonus = new BonusEntity(bonusType, x, y, TimeSpan.FromMilliseconds(BonusTimer));
+                        BonusEntity bonus = new BonusEntity(bonusType, x, y, TimeSpan.FromMilliseconds(ServerOptions.BonusTimer));
                         AddMapModification(modifications, bonus, MapModificationOperations.Add);
                         EnqueueTimeoutGameAction(bonus.FadeoutTimeout, bonus, e => FadeOutBonusAction(e as BonusEntity));
                     }
@@ -912,7 +765,7 @@ namespace Bomberman.Server
                 if (cell.Entities.All(e => !e.IsFlames))
                 {
                     // Create flame
-                    FlameEntity flame = new FlameEntity(x, y, TimeSpan.FromMilliseconds(FlameTimer));
+                    FlameEntity flame = new FlameEntity(x, y, TimeSpan.FromMilliseconds(ServerOptions.FlameTimer));
                     AddMapModification(modifications, flame, MapModificationOperations.Add);
                     EnqueueTimeoutGameAction(flame.FadeoutTimeout, flame, e => FadeOutFlameAction(e as FlameEntity));
 
@@ -1069,22 +922,22 @@ namespace Bomberman.Server
                 foreach (IPlayer p in _playerManager.Players)
                 {
                     // Check player timeout
-                    if (IsTimeoutDetectionActive)
+                    if (ServerOptions.IsTimeoutDetectionActive)
                     {
                         TimeSpan timespan = DateTime.Now - p.LastActionFromClient;
-                        if (timespan.TotalMilliseconds > TimeoutDelay)
+                        if (timespan.TotalMilliseconds > ServerOptions.TimeoutDelay)
                         {
                             Log.WriteLine(Log.LogLevels.Info, "Timeout++ for player {0}", p.Name);
                             // Update timeout count
                             p.SetTimeout();
-                            if (p.TimeoutCount >= MaxTimeoutCountBeforeDisconnection)
+                            if (p.TimeoutCount >= ServerOptions.MaxTimeoutCountBeforeDisconnection)
                                 OnPlayerDisconnected(p);
                         }
                     }
 
                     // Send heartbeat if needed
                     TimeSpan delayFromPreviousHeartbeat = DateTime.Now - p.LastActionToClient;
-                    if (delayFromPreviousHeartbeat.TotalMilliseconds > HeartbeatDelay)
+                    if (delayFromPreviousHeartbeat.TotalMilliseconds > ServerOptions.HeartbeatDelay)
                         p.OnPing();
                 }
 

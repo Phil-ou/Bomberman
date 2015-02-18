@@ -106,7 +106,7 @@ namespace Bomberman.Client.WPF.ViewModels.Play
 
         private void OnEntityTransformed(EntityTypes oldEntity, EntityTypes newEntity, int locationX, int locationY)
         {
-            CellItem cell = Cells.FirstOrDefault(c => c.X == locationX && c.Y == locationY && c.Type == oldEntity);
+            CellItem cell = Cells.FirstOrDefault(c => c.X == locationX && c.Y == locationY && (c.Type & oldEntity) == oldEntity);
             if (cell != null)
             {
                 SolidColorBrush color = GetCellColor(newEntity);
@@ -119,21 +119,39 @@ namespace Bomberman.Client.WPF.ViewModels.Play
 
         private void OnEntityMoved(EntityTypes entity, int oldLocationX, int oldLocationY, int newLocationX, int newLocationY)
         {
-            CellItem cell = Cells.FirstOrDefault(c => c.X == oldLocationX && c.Y == oldLocationY && c.Type == entity);
+            CellItem cell = Cells.FirstOrDefault(c => c.X == oldLocationX && c.Y == oldLocationY && (c.Type & entity) == entity);
             if (cell != null)
             {
-                cell.X = newLocationX;
-                cell.Y = newLocationY;
+                if (cell.Type != entity) // more than one flag set, create a new cell and modify cell
+                {
+                    // Remove moving entity from cell
+                    EntityTypes newType = cell.Type & ~entity;
+                    ModifyCellEntity(cell, newType);
+                    // Create new cell for moving entity
+                    CellItem newCell = CreateCell(entity, newLocationX, newLocationY);
+                    ExecuteOnUIThread.Invoke(() => Cells.Add(newCell));
+                }
+                else
+                {
+                    cell.X = newLocationX;
+                    cell.Y = newLocationY;
+                }
             }
         }
 
         private void OnEntityDeleted(EntityTypes entity, int locationX, int locationY)
         {
-            CellItem cell = Cells.FirstOrDefault(c => c.X == locationX && c.Y == locationY && c.Type == entity);
+            CellItem cell = Cells.FirstOrDefault(c => c.X == locationX && c.Y == locationY && (c.Type & entity) == entity);
             if (cell != null)
-                ExecuteOnUIThread.Invoke(() => Cells.Remove(cell));
-            else
             {
+                if (cell.Type != entity) // more than one flag set
+                {
+                    // Remove entity from cell
+                    EntityTypes newType = cell.Type & ~entity;
+                    ModifyCellEntity(cell, newType);
+                }
+                else
+                    ExecuteOnUIThread.Invoke(() => Cells.Remove(cell));
             }
             // TODO: if removed is bomb -> explosion
         }
@@ -180,6 +198,15 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         {
             if (_isGameStarted)
                 Client.Do(x => x.PlaceBomb());
+        }
+
+        private void ModifyCellEntity(CellItem cell, EntityTypes newType)
+        {
+            cell.Type = newType;
+            SolidColorBrush color = GetCellColor(cell.Type);
+            string text = GetCellText(cell.Type);
+            cell.Color = color;
+            cell.Text = text;
         }
 
         private SolidColorBrush GetCellColor(EntityTypes type)
@@ -247,6 +274,7 @@ namespace Bomberman.Client.WPF.ViewModels.Play
 
         private void BuildCells(Map map)
         {
+            // Recreate cells from map
             Cells = new ObservableCollection<CellItem>();
             Width = map.Description.Size*20;
             Height = map.Description.Size * 20;

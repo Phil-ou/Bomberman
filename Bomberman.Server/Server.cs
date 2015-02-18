@@ -207,7 +207,7 @@ namespace Bomberman.Server
                             p.BombRange = ServerOptions.MinExplosionRange;
                             p.Bonuses = new List<EntityTypes>();
 
-                            p.Bonuses.Add(EntityTypes.BonusFlameBomb); // TODO: remove
+                            //p.Bonuses.Add(EntityTypes.BonusBombKick); // TODO: remove
                         }
 
                         //
@@ -715,19 +715,6 @@ namespace Bomberman.Server
 
                     // Get random bonus
                     EntityTypes bonusType = RangeRandom.Random(_bonusOccurancies);
-                    //// TODO: better randomization
-                    //EntityTypes bonusType = EntityTypes.Empty;
-                    //int random = _random.Next(5);
-                    //if (random == 1)
-                    //    bonusType = EntityTypes.BonusFireUp;
-                    //else if (random == 2)
-                    //    bonusType = EntityTypes.BonusNoClipping;
-                    //else if (random == 3)
-                    //    bonusType = EntityTypes.BonusBombUp;
-                    //else if (random == 4)
-                    //    bonusType = EntityTypes.BonusBombKick;
-                    //// 0 -> no bonus
-
                     if (bonusType != EntityTypes.Empty)
                     {
                         // Add bonus

@@ -50,6 +50,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ViewModels\Play\BonusItem.cs" />
     <Compile Include="ViewModels\Play\CellItem.cs" />
     <Compile Include="ViewModels\Play\PlayViewModel.cs" />
     <Compile Include="Views\Play\Play.xaml.cs">

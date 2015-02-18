@@ -14,15 +14,20 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         private bool _isGameStarted;
 
         private ObservableCollection<CellItem> _cells;
-
         public ObservableCollection<CellItem> Cells
         {
             get { return _cells; }
             set { Set(() => Cells, ref _cells, value); }
         }
 
-        private int _width;
+        private ObservableCollection<BonusItem> _bonuses;
+        public ObservableCollection<BonusItem> Bonuses
+        {
+            get { return _bonuses; }
+            set { Set(() => Bonuses, ref _bonuses, value); }
+        }
 
+        private int _width;
         public int Width
         {
             get { return _width; }
@@ -30,7 +35,6 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         }
 
         private int _height;
-
         public int Height
         {
             get { return _height; }
@@ -76,7 +80,11 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         private void OnGameStarted(Map map)
         {
             _isGameStarted = true;
-            ExecuteOnUIThread.Invoke(() => BuildCells(map));
+            ExecuteOnUIThread.Invoke(() =>
+                {
+                    Bonuses = new ObservableCollection<BonusItem>();
+                    BuildCells(map);
+                });
         }
 
         private void OnGameLost()
@@ -165,7 +173,7 @@ namespace Bomberman.Client.WPF.ViewModels.Play
 
         private void OnBonusPickedUp(EntityTypes bonus)
         {
-            // TODO:
+            ExecuteOnUIThread.Invoke(() => AddBonus(bonus));
         }
 
         #endregion
@@ -200,6 +208,19 @@ namespace Bomberman.Client.WPF.ViewModels.Play
                 Client.Do(x => x.PlaceBomb());
         }
 
+        private void AddBonus(EntityTypes bonus)
+        {
+            if (Bonuses.Any(x => x.Type == bonus)) // don't add same bonus
+                return;
+            BonusItem bonusItem = new BonusItem
+                {
+                    Type = bonus,
+                    Color = GetCellColor(bonus),
+                    Text = GetBonus(bonus).ToString(CultureInfo.InvariantCulture)
+                };
+            Bonuses.Add(bonusItem);
+        }
+
         private void ModifyCellEntity(CellItem cell, EntityTypes newType)
         {
             cell.Type = newType;
@@ -212,14 +233,14 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         private SolidColorBrush GetCellColor(EntityTypes type)
         {
             Color color = Colors.White;
-            if (IsFlames(type))
-                color = Colors.Red;
-            if (IsBonus(type))
-                color = Colors.Green;
             if (IsBomb(type))
-                color = Colors.Yellow;
+                color = Blend(color, Colors.Yellow);
+            if (IsFlames(type))
+                color = Blend(color, Colors.Red);
+            if (IsBonus(type))
+                color = Blend(color, Colors.Green);
             if (IsWall(type))
-                color = Colors.Black;
+                color = Blend(color, Colors.Black);
             color.A = 128;
             return new SolidColorBrush(color);
         }
@@ -382,6 +403,15 @@ namespace Bomberman.Client.WPF.ViewModels.Play
         }
 
         #endregion
+
+        public static Color Blend(Color color, Color backColor, double amount = 0.5)
+        {
+            byte r = (byte)((color.R * amount) + backColor.R * (1 - amount));
+            byte g = (byte)((color.G * amount) + backColor.G * (1 - amount));
+            byte b = (byte)((color.B * amount) + backColor.B * (1 - amount));
+            byte a = (byte)((color.A * amount) + backColor.A * (1 - amount));
+            return Color.FromArgb(a, r, g, b);
+        }
     }
 
     public class PlayViewModelDesignData : PlayViewModel

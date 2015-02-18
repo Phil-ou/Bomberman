@@ -10,8 +10,10 @@
         mc:Ignorable="d" 
         d:DataContext="{d:DesignInstance viewModels:MainViewModelDesignData, IsDesignTimeCreatable=True}"        
         Title="Bomberman" 
-        Height="350" Width="525">
+        Height="500" Width="525">
     <Grid>
+        <!-- TODO one control with triggers and template -->
+        
         <!-- Visible only if not connected -->
         <loginViews:Login DataContext="{Binding LoginViewModel}">
             <loginViews:Login.Style>
@@ -44,7 +46,7 @@
             </waitRoomViews:WaitRoom.Style>
         </waitRoomViews:WaitRoom>
         
-        <!-- Visible if connected and player -->
+        <!-- Visible if connected and playing -->
         <playViews:Play DataContext="{Binding PlayViewModel}">
             <playViews:Play.Style>
                 <Style TargetType="{x:Type playViews:Play}">

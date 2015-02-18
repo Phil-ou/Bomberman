@@ -5,33 +5,57 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:playViewModels="clr-namespace:Bomberman.Client.WPF.ViewModels.Play"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance playViewModels:PlayViewModelDesignData, IsDesignTimeCreatable=True}"
-             Width="{Binding Width}" Height="{Binding Height}">
-    <ItemsControl ItemsSource="{Binding Path=Cells}">
-        <ItemsControl.ItemContainerStyle>
-            <Style TargetType="ContentPresenter">
-                <Style.Setters>
-                    <Setter Property="Panel.ZIndex" Value="{Binding Z}"/>
-                </Style.Setters>
-            </Style>
-        </ItemsControl.ItemContainerStyle>
-        <ItemsControl.ItemTemplate>
-            <DataTemplate>
-                <Canvas>
-                    <!--<Rectangle Width="{Binding Width}" Height="{Binding Height}" 
+             d:DataContext="{d:DesignInstance playViewModels:PlayViewModelDesignData, IsDesignTimeCreatable=True}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <ItemsControl Grid.Row="0"
+                      ItemsSource="{Binding Bonuses}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Width="20"
+                               Text="{Binding Text}" Background="{Binding Color}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ItemsControl Grid.Row="1"
+                      Width="{Binding Width}" Height="{Binding Height}"
+                      ItemsSource="{Binding Cells}">
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Style.Setters>
+                        <Setter Property="Panel.ZIndex" Value="{Binding Z}"/>
+                    </Style.Setters>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Canvas>
+                        <!--<Rectangle Width="{Binding Width}" Height="{Binding Height}" 
                                 Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" 
                                 Fill="{Binding Color}"/>
                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" 
                                Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}" 
                                Text="{Binding Text}"/>-->
-                    <Border Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}"
+                        <Border Canvas.Top="{Binding Path=PositionY}" Canvas.Left="{Binding Path=PositionX}"
                             Width="{Binding Width}" Height="{Binding Height}" 
                             Background="{Binding Color}">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" 
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" 
                                    Text="{Binding Text}"/>
-                    </Border>
-                </Canvas>
-            </DataTemplate>
-        </ItemsControl.ItemTemplate>
-    </ItemsControl>
+                        </Border>
+                    </Canvas>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+    </Grid>
 </UserControl>

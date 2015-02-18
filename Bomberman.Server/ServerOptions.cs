@@ -15,6 +15,6 @@
         internal const int BombTimer = 3000; // in ms
         internal const int FlameTimer = 2000; // in ms
         internal const int BombMoveTimer = 500; // in ms
-        internal const int BonusTimer = 10000; // in ms
+        internal const int BonusTimer = 5000; // in ms
     }
 }

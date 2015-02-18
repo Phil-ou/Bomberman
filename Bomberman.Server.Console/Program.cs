@@ -24,70 +24,80 @@ namespace Bomberman.Server.Console
 
             Log.Initialize(ConfigurationManager.AppSettings["logpath"], "bomberman_server.log");
             //
-            //List<BonusOccurancy> occurancies = new List<BonusOccurancy>
-            //{
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.Empty,
-            //        Occurancy = 10
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusFireUp,
-            //        Occurancy = 17
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusFireDown,
-            //        Occurancy = 17
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusBombUp,
-            //        Occurancy = 18
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusBombDown,
-            //        Occurancy = 18
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusBombKick,
-            //        Occurancy = 10
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusFlameBomb,
-            //        Occurancy = 7
-            //    },
-            //    new BonusOccurancy
-            //    {
-            //        Value = EntityTypes.BonusNoClipping,
-            //        Occurancy = 3
-            //    },
-            //};
             List<IOccurancy<EntityTypes>> occurancies = new List<IOccurancy<EntityTypes>>
             {
                 new BonusOccurancy
                 {
+                    Value = EntityTypes.Empty,
+                    Occurancy = 10
+                },
+                new BonusOccurancy
+                {
+                    Value = EntityTypes.BonusFireUp,
+                    Occurancy = 17
+                },
+                new BonusOccurancy
+                {
+                    Value = EntityTypes.BonusFireDown,
+                    Occurancy = 17
+                },
+                new BonusOccurancy
+                {
+                    Value = EntityTypes.BonusBombUp,
+                    Occurancy = 18
+                },
+                new BonusOccurancy
+                {
+                    Value = EntityTypes.BonusBombDown,
+                    Occurancy = 18
+                },
+                new BonusOccurancy
+                {
                     Value = EntityTypes.BonusBombKick,
-                    Occurancy = 50
+                    Occurancy = 10
                 },
                 new BonusOccurancy
                 {
                     Value = EntityTypes.BonusFlameBomb,
-                    Occurancy = 50
+                    Occurancy = 7
+                },
+                new BonusOccurancy
+                {
+                    Value = EntityTypes.BonusNoClipping,
+                    Occurancy = 3
                 },
             };
+            //List<IOccurancy<EntityTypes>> occurancies = new List<IOccurancy<EntityTypes>>
+            //{
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusBombKick,
+            //        Occurancy = 50
+            //    },
+            //    new BonusOccurancy
+            //    {
+            //        Value = EntityTypes.BonusFlameBomb,
+            //        Occurancy = 50
+            //    },
+            //};
             //
-            PlayerManager.PlayerManager playerManager = new PlayerManager.PlayerManager(4);
+            IPlayerManager playerManager = new PlayerManager.PlayerManager(4);
             //
-            string mapPath = ConfigurationManager.AppSettings["mappath"];
-            MapManager.MapManager mapManager = new MapManager.MapManager();
-            mapManager.ReadMaps(mapPath);
+            string mapPath = String.Empty;
+            IMapManager mapManager;
+            try
+            {
+                mapPath = ConfigurationManager.AppSettings["mappath"];
+                mapManager = new MapManager.MapManager();
+                mapManager.ReadMaps(mapPath);
+            }
+            catch(ArgumentException ex)
+            {
+                Log.WriteLine(Log.LogLevels.Error, "Problem while reading maps from path {0}. Exception: {1}", mapPath, ex);
+                return;
+            }
             //
-            EntityMap entityMap = new EntityMap();
+            IEntityMap entityMap = new EntityMap();
             //
             string port = ConfigurationManager.AppSettings["port"];
             WCFHost.WCFHost host = new WCFHost.WCFHost(port, playerManager, (s, callback) => new Player(s, callback));
@@ -164,7 +174,7 @@ namespace Bomberman.Server.Console
 
         #region Display map
 
-        private static void DisplayEntityMap(EntityMap entityMap)
+        private static void DisplayEntityMap(IEntityMap entityMap)
         {
             for (int y = 0; y < entityMap.Size; y++)
             {

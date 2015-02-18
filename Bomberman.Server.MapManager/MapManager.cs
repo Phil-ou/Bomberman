@@ -25,6 +25,8 @@ namespace Bomberman.Server.MapManager
         {
             if (path == null)
                 throw new ArgumentNullException("path");
+            if (!Directory.Exists(path))
+                throw new ArgumentException("Path doesn't exist", "path");
 
             Path = path;
             Maps = new List<Map>();

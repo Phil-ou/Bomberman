@@ -432,6 +432,9 @@ namespace Bomberman.Server
                     Log.WriteLine(Log.LogLevels.Info, "Player {0} picked up bonus {1}", player.Name, bonusEntity);
                 }
 
+                // Move player on map
+                _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
+
                 // Set new location
                 player.LocationX = newLocationX;
                 player.LocationY = newLocationY;
@@ -447,9 +450,6 @@ namespace Bomberman.Server
                         _timeoutActionQueue.RemoveAll(e => e.Item1 == bonus);
                     player.OnBonusPickedUp(bonusEntity, newLocationX, newLocationY);
                 }
-
-                // Move player on map
-                _entityMap.MoveEntity(playerEntity, newLocationX, newLocationY);
 
                 // Inform other players about player move and bonus
                 foreach (IPlayer p in _playerManager.Players.Where(x => x != player))

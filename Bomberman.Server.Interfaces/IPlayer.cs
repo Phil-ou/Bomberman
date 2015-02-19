@@ -8,7 +8,7 @@ namespace Bomberman.Server.Interfaces
     public enum PlayerStates
     {
         Connected,  // -> Playing
-        Playing,    // ->  Dying|Winner
+        Playing,    // -> Dying|Winner
         Dying,      // -> Dead  intermediate state used when a player dies to avoid warning multiple time the same death if multiple bomb are exploding at the same time on the same player for example. Player is set to Dying, then when explosion handling is done, player is set to Died
         Winner,     // -> Connected
         Dead        // -> Connected

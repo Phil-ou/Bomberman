@@ -73,9 +73,9 @@ namespace Bomberman.Server.PlayerManager
 
         public object LockObject { get; private set; }
 
-        public IEnumerable<IPlayer> Players
+        public IReadOnlyCollection<IPlayer> Players
         {
-            get { return _players.Where(x => x != null); }
+            get { return _players.Where(x => x != null).ToList(); }
         }
 
         public int GetId(IPlayer player)

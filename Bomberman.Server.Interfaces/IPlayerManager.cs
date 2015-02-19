@@ -16,7 +16,7 @@ namespace Bomberman.Server.Interfaces
         int PlayerCount { get; }
         object LockObject { get; }
 
-        IEnumerable<IPlayer> Players { get; }
+        IReadOnlyCollection<IPlayer> Players { get; }
 
         int GetId(IPlayer player);
 
